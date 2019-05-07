@@ -17,7 +17,7 @@ class NC1NN:
 
     def scores(self, x_, y_):
         scores = np.zeros(self.X.shape[0] + 1)
-        d_eq, d_neq, d_map = self.__nn(x_, y_)
+        d_eq, d_neq, d_map = self.nn(x_, y_)
 
         for i in range(self.X.shape[0]):
             scores[i] = self.scores_[i]
@@ -36,7 +36,7 @@ class NC1NN:
         return scores
 
     def __update(self, x_, y_):
-        d_eq, d_neq, d_map = self.__nn(x_, y_)
+        d_eq, d_neq, d_map = self.nn(x_, y_)
 
         # update
         for i in range(self.X.shape[0]):
@@ -59,7 +59,7 @@ class NC1NN:
         self.dists.append([d_eq, d_neq])
         self.scores_.append(self.__score(d_eq,d_neq))
 
-    def __nn(self, x_, y_):
+    def nn(self, x_, y_):
         d_eq, d_neq = inf, inf
         d_map = []
 
