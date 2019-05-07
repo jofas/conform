@@ -1,0 +1,12 @@
+[package]
+name = "test_rs"
+version = "0.1.0"
+authors = ["jofas <jonas@fc-web.de>"]
+edition = "2018"
+
+[lib]
+name = "test_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "*", features = ["extension-module"] }
