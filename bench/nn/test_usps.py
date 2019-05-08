@@ -34,15 +34,15 @@ def usps_test_set(amount):
 
     return X, y, x_, y_
 
-'''
 def test_usps_rs_50(benchmark):
     X, y, x_, y_ = usps_test_set(50)
     benchmark(nn, X, y, x_, y_)
 
 def test_usps_rs_par_50(benchmark):
     X, y, x_, y_ = usps_test_set(50)
-    benchmark(nn, X, y, x_, y_)
+    benchmark(nn_par, X, y, x_, y_)
 
+'''
 def test_usps_py_50(benchmark):
     X, y, x_, y_ = usps_test_set(50)
 
@@ -50,6 +50,7 @@ def test_usps_py_50(benchmark):
     nc.update(X, y)
 
     benchmark(nc.nn, x_, y_)
+'''
 
 
 def test_usps_rs_100(benchmark):
@@ -58,8 +59,9 @@ def test_usps_rs_100(benchmark):
 
 def test_usps_rs_par_100(benchmark):
     X, y, x_, y_ = usps_test_set(100)
-    benchmark(nn, X, y, x_, y_)
+    benchmark(nn_par, X, y, x_, y_)
 
+'''
 def test_usps_py_100(benchmark):
     X, y, x_, y_ = usps_test_set(100)
 
@@ -67,7 +69,7 @@ def test_usps_py_100(benchmark):
     nc.update(X, y)
 
     benchmark(nc.nn, x_, y_)
-
+'''
 
 def test_usps_rs_150(benchmark):
     X, y, x_, y_ = usps_test_set(150)
@@ -75,8 +77,9 @@ def test_usps_rs_150(benchmark):
 
 def test_usps_rs_par_150(benchmark):
     X, y, x_, y_ = usps_test_set(150)
-    benchmark(nn, X, y, x_, y_)
+    benchmark(nn_par, X, y, x_, y_)
 
+'''
 def test_usps_py_150(benchmark):
     X, y, x_, y_ = usps_test_set(150)
 
@@ -84,21 +87,14 @@ def test_usps_py_150(benchmark):
     nc.update(X, y)
 
     benchmark(nc.nn, x_, y_)
-
-def test_usps_rs_300(benchmark):
-    X, y, x_, y_ = usps_test_set(300)
-    benchmark(nn, X, y, x_, y_)
 '''
 
-def test_usps_rs_par_300(benchmark):
-    from copy import deepcopy
+
+def test_usps_rs_9000(benchmark):
     X, y, x_, y_ = usps_test_set(9000)
-
-    for i in range(7):
-        X_  = deepcopy(X)
-        y__ = deepcopy(y)
-        X = np.vstack((X, X_))
-        y = np.append(y, y__)
-
     benchmark(nn, X, y, x_, y_)
+
+def test_usps_rs_par_9000(benchmark):
+    X, y, x_, y_ = usps_test_set(9000)
+    benchmark(nn_par, X, y, x_, y_)
 
