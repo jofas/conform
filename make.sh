@@ -12,5 +12,5 @@ cd ..
 # put the compiled libs where they should end up
 mv test_rs.so bench/
 
-cp nc1nn.so tests/
+cp nc1nn.so tests/nc1nn/
 mv nc1nn.so bench/nn/

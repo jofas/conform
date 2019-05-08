@@ -2,10 +2,6 @@
 
 ## TODO
 
-- usps bench
-
-- nc1nn_rs parallel (py.allow_threads or par_apply not working)
-
-- nc1nn_rs -> nn to full inner impl
+- nc1nn_rs -> nn to full inner impl (pyclass vs. procedural)
 
 - tests, benchmarks
