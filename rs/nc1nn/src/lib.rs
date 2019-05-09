@@ -1,11 +1,14 @@
 #![allow(non_snake_case)]
 
 use pyo3::prelude::*;
+use pyo3::PyErr;
+use pyo3::exceptions::Exception;
 
-//#[macro_use(s)]
-//extern crate ndarray;
-use ndarray::{ Zip, Array2, ArrayView1, ArrayViewMut1
-             , ArrayView2, stack, Axis };
+#[macro_use(s)]
+extern crate ndarray;
+use ndarray::{ Axis, Array, Array1, Array2
+             , ArrayView1, ArrayViewMut1, ArrayView2, stack
+             , Zip };
 use ndarray_parallel::prelude::*;
 
 use numpy::{PyArray1, PyArray2};
@@ -89,7 +92,7 @@ fn _nn_par( X  : ArrayView2<f64>, y  : ArrayView1<i64>
 }
 // }}}
 
-fn score_from_array(ds: &ArrayViewMut1<f64>) -> f64 {
+fn score_from_mut_array(ds: &ArrayViewMut1<f64>) -> f64 {
   score_from_scalars(ds[0], ds[1])
 }
 
@@ -97,6 +100,10 @@ fn score_from_scalars(d_eq: f64, d_neq: f64) -> f64 {
        if d_eq == d_neq { 0. }
   else if d_neq > 0.0   { d_eq / d_neq }
   else                  { f64::INFINITY }
+}
+
+fn except(s: &'static str) -> PyErr {
+  PyErr::new::<Exception, String>(String::from(s))
 }
 
 #[pymodule]
@@ -115,84 +122,120 @@ fn nc1nn(_py: Python, m: &PyModule) -> PyResult<()> {
   {
     let X_new  = X_new.as_array();
     let y_new  = y_new.as_array();
-    let mut X_seen = X_seen.to_owned_array();
-    let mut y_seen = y_seen.to_owned_array();
-    let mut dists  = dists.to_owned_array();
-    let mut scores = scores.to_owned_array();
 
+    let len_new  = *X_new.shape().first()
+      .ok_or_else(|| except("Error with X_new shape"))?;
+    let len_seen = *X_seen.shape().first()
+      .ok_or_else(|| except("Error with X_seen shape"))?;
+
+    let X = stack(Axis(0), &[X_seen.as_array(),X_new])
+      .map_err(|_| except("Error stacking X"))?;
+    let y = stack(Axis(0), &[y_seen.as_array(),y_new])
+      .map_err(|_| except("Error stacking y"))?;
+
+    let dists_new = Array::from_elem( (len_new, 2)
+                                    , f64::INFINITY );
+    let mut dists  = stack(
+      Axis(0), &[dists.as_array(), dists_new.view()]
+    ).map_err(|_| except("Error stacking dists"))?;
+
+    let scores_new = Array::zeros((len_new, ));
+    let mut scores = stack(
+      Axis(0), &[scores.as_array(), scores_new.view()]
+    ).map_err(|_| except("Error stacking scores"))?;
+
+    let mut round = 0;
     Zip::from(X_new.genrows()).and(&y_new)
-      .apply(|x, y| {
+      .apply(|x_, y_| {
+
+        let prev_idx = len_seen + round;
+
+        let X_prev = X.slice(s![.. prev_idx, ..]);
+        let y_prev = y.slice(s![.. prev_idx]);
+
         let (d_eq, d_neq, d_map) =
-          _nn_par(X_seen.view(), y_seen.view(), x, *y);
+          _nn_par(X_prev, y_prev, x_, *y_);
 
-        Zip::from(dists.genrows_mut())
-          .and(d_map.genrows())
-          .and(&mut scores)
-          .apply(|mut ds, d_map, s| {
-            if ds[0] > d_map[0] {
-              ds[0] = d_map[0];
-              *s = score_from_array(&ds);
-            } else if ds[1] > d_map[1] {
-              ds[1] = d_map[1];
-              *s = score_from_array(&ds);
-            }
-          });
+        {
+          let mut dists_prev  =
+            dists.slice_mut(s![.. prev_idx, ..]);
+          let mut scores_prev =
+            scores.slice_mut(s![.. prev_idx]);
 
-        let x = x.insert_axis(Axis(0));
+          Zip::from(dists_prev.genrows_mut())
+            .and(d_map.genrows())
+            .and(&mut scores_prev)
+            .apply(|mut ds, d_map, s| {
+              if ds[0] > d_map[0] {
+                ds[0] = d_map[0];
+                *s = score_from_mut_array(&ds);
+              } else if ds[1] > d_map[1] {
+                ds[1] = d_map[1];
+                *s = score_from_mut_array(&ds);
+              }
+            });
+        }
 
-        let dist_entry = [d_eq, d_neq];
-        let dist_append = ArrayView1::<f64>
-          ::from(&dist_entry).insert_axis(Axis(0));
+        dists[[prev_idx,0]] = d_eq;
+        dists[[prev_idx,1]] = d_neq;
 
-        let scores_append =
-          &[score_from_scalars(d_eq, d_neq)];
+        scores[prev_idx] = score_from_scalars(d_eq, d_neq);
 
-        X_seen = stack![Axis(0), X_seen, x];
-        y_seen = stack![Axis(0), y_seen, &[*y]];
-        dists  = stack![Axis(0), dists,  dist_append];
-        scores = stack![Axis(0), scores, scores_append];
+        round += 1;
     });
 
-    let X_seen = X_seen.into_pyarray(py).to_owned();
-    let y_seen = y_seen.into_pyarray(py).to_owned();
+    let X = X.into_pyarray(py).to_owned();
+    let y = y.into_pyarray(py).to_owned();
     let dists  = dists.into_pyarray(py).to_owned();
     let scores = scores.into_pyarray(py).to_owned();
 
-    Ok((X_seen, y_seen, dists, scores))
+    Ok((X, y, dists, scores))
   }
 
   // scores {{{
-  /*
   #[pyfn(m, "scores")]
-  fn scores( _py    : Python
-           , scores : &PyArray1<f64>
+  fn scores( py     : Python
+           , x_     : &PyArray1<f64>
+           , y_     : i64
            , X      : &PyArray2<f64>
            , y      : &PyArray1<i64>
-           , x_     : &PyArray1<f64>
-           , y_     : i64 ) -> Py<PyArray1<f64>>
+           , dists  : &PyArray2<f64>
+           , scores : &PyArray1<f64> ) -> Py<PyArray1<f64>>
   {
-    let scores = scores.as_array();
+    let x_     = x_.as_array();
     let X      = X.as_array();
     let y      = y.as_array();
-    let x_     = x_.as_array();
+    let dists  = dists.as_array();
+    let scores = scores.as_array();
 
-    let mut scores_ = Array1::<f64>
+    let mut scores_res = Array1::<f64>
       ::default((*X.shape().first().unwrap() + 1, ));
-
-    let mut scores__ = scores_.slice_mut(s![.. -1]);
+    let mut scores_res_for_iter = scores_res
+      .slice_mut(s![.. -1]);
 
     let (d_eq, d_neq, d_map) = _nn(X, y, x_, y_);
 
-    Zip::from(&mut scores__)
-      .and(&X)
-      .and(&d_map)
-      .and(&d_map_eq)
-      .apply(|s, x, d, eq| {
+    Zip::from(&mut scores_res_for_iter)
+      .and(&scores)
+      .and(dists.genrows())
+      .and(d_map.genrows())
+      .apply(|s_, s, d, dm| {
+
+        if d[0] > dm[0] {
+          *s_ = score_from_scalars(dm[0], d[1]);
+        } else if d[1] > dm[1] {
+          *s_ = score_from_scalars(d[0], dm[1]);
+        } else {
+          *s_ = *s;
+        }
+
       });
 
-    unimplemented!()
+    let l = scores_res.len();
+    scores_res[l - 1] = score_from_scalars(d_eq, d_neq);
+
+    scores_res.into_pyarray(py).to_owned()
   }
-  */
   // }}}
 
   // nn {{{

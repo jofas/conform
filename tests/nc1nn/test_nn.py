@@ -3,8 +3,10 @@ import math
 
 from infinity import inf
 
-from nc1nn import nn, nn_par
+from ..conform.ncs import NC1NN
 
+# DEPRECATED
+'''
 def data():
     X = np.array([[0.0, 0.1], [1.0, 1.1], [2.0, 2.1]])
     y = np.array([0, 1, 2])
@@ -15,7 +17,10 @@ def data():
 def test_rust_nn():
     X, y, x_, y_ = data()
 
-    d_eq, d_neq, d_map = nn(X, y, x_, y_)
+    nn = NC1NN()
+    nn.update(X, y)
+
+    d_eq, d_neq, d_map = nn.nn(x_, y_)
 
     assert d_eq == inf
     assert d_neq == math.sqrt(2.0)
@@ -45,3 +50,4 @@ def test_rust_nn_par():
 
     assert d_map[2][0] == inf
     assert d_map[2][1] == math.sqrt(2.0)
+'''
