@@ -6,30 +6,68 @@ from infinity import inf
 
 from . import nc1nn
 
-class NC1NN:
+from ..base import BaseNCS
+
+class NC1NN(BaseNCS):
     def __init__(self):
-        self.X       = np.array([[]])
-        self.y       = np.array([], dtype=np.int64)
-        self.dists   = np.array([[inf, inf]], dtype=np.float64)
+        self.init    = False
+        self.X       = None
+        self.y       = None
+        self.dists   = \
+            np.array([[inf, inf]], dtype=np.float64)
         self.scores_ = np.array([0.0])
 
-    def update(self, X, y):
-        if self.X.shape[1] == 0:
-            self.X = np.array([X[0]])
-            self.y = np.array([y[0]])
+    def __init(self, X, y):
+        self.X = np.array([X[0]])
+        self.y = np.array([y[0]])
+        self.init = True
 
-            X = X[1:]
-            y = y[1:]
+        return X[1:], y[1:]
+
+    def update(self, X, y):
+        if not self.init: X, y = self.__init(X, y)
 
         self.X, self.y, self.dists, self.scores_ = \
-            nc1nn.update( X, y, self.X, self.y
-                        , self.dists, self.scores_ )
+            nc1nn.update_par( X, y, self.X, self.y
+                            , self.dists, self.scores_ )
 
     def scores(self, x, y):
-        return nc1nn.scores( x, y, self.X, self.y
-                           , self.dists, self.scores_)
+        if not self.init: return np.array([0.0])
 
-class NC1NN_py:
+        return nc1nn.scores_par( x, y, self.X, self.y
+                               , self.dists, self.scores_)
+
+    # for benchmarks -> depr in later versions
+    def update_seq(self, X, y):
+        if not self.init: X, y = self.__init(X, y)
+
+        self.X, self.y, self.dists, self.scores_ = \
+            nc1nn.update_seq( X, y, self.X, self.y
+                            , self.dists, self.scores_ )
+
+    # for benchmarks -> depr in later versions
+    def update_par(self, X, y):
+        if not self.init: X, y = self.__init(X, y)
+
+        self.X, self.y, self.dists, self.scores_ = \
+            nc1nn.update_par( X, y, self.X, self.y
+                            , self.dists, self.scores_ )
+
+    # for benchmarks -> depr in later versions
+    def scores_seq(self, x, y):
+        if not self.init: return np.array([0.0])
+
+        return nc1nn.scores_par( x, y, self.X, self.y
+                               , self.dists, self.scores_)
+
+    # for benchmarks -> depr in later versions
+    def scores_par(self, x, y):
+        if not self.init: return np.array([0.0])
+
+        return nc1nn.scores_par( x, y, self.X, self.y
+                               , self.dists, self.scores_)
+
+class NC1NN_py(BaseNCS):
     def __init__(self):
         self.X       = np.array([])
         self.y       = np.array([])

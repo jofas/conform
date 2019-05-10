@@ -2,10 +2,22 @@
 
 ## TODO
 
-- nc1nn_rs -> catch empty X, y errors
+- benchmarks
 
-- clean repo and imports (__init__.py)
- 
-- tests, benchmarks
+- test: nc1nn vs nc1nn_py -> main
 
 - experiments.py -> usps
+
+- clean repo and imports (__init__.py)
+
+- ICP
+
+- CP -> rs
+
+- MCP
+
+- Venn
+
+- ACP ?
+
+- smoothed ?

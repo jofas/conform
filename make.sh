@@ -10,6 +10,4 @@ done
 cd ..
 
 # put the compiled libs where they should end up
-mv test_rs.so bench/
-
 mv nc1nn.so conform/ncs/nc1nn/
