@@ -2,10 +2,6 @@
 
 ## TODO
 
-- experiments export (CPMetrics)
-
-- experiments.py -> usps
-
 - ICP
 
 - MCP
@@ -18,4 +14,6 @@
 
 - CP -> rs
 
-- v0.1.1 -> rm NC1NN_py, NC1NN_old, nc1nn_rs par || seq
+- experiments export (CPMetrics) ?
+
+- v0.1.1 -> rm NC1NN_py, NC1NN_old, nc1nn_rs seq

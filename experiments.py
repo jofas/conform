@@ -36,7 +36,13 @@ def load_usps_random():
 
 def main():
     # TODO: usps -> export json? csv?
-    pass
+    for i in range(10):
+        X, y = load_usps_random()
+        epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
+        cp = CP(NC1NN(), epsilons, np.arange(10))
+        res = cp.score_online(X, y)
+        print(i)
+        print(res)
 
 if __name__ == '__main__':
     main()
