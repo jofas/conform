@@ -3,10 +3,7 @@ import numpy as np
 from infinity import inf
 
 from . import NC1NN
-
-def vec_cmp(a1, a2):
-    for i in range(a1.shape[0]):
-        assert a1[i] == a2[i]
+from .helpers import vec_cmp
 
 def test_scores():
     X = np.array([[0.0],[1.0],[2.0],[3.0]])

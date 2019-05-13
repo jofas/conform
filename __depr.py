@@ -3,8 +3,8 @@ from time import time
 
 import numpy as np
 
-from cp import CP, CPMetrics
-from nc_scores import NC1NN
+from conform.cp import CP, CPMetrics
+from conform.ncs import NC1NN
 
 from tests import IRIS_SUBSET_X, IRIS_SUBSET_Y
 

@@ -2,17 +2,11 @@
 
 ## TODO
 
-- benchmarks
-
-- test: nc1nn vs nc1nn_py -> main
+- experiments export (CPMetrics)
 
 - experiments.py -> usps
 
-- clean repo and imports (__init__.py)
-
 - ICP
-
-- CP -> rs
 
 - MCP
 
@@ -21,3 +15,7 @@
 - ACP ?
 
 - smoothed ?
+
+- CP -> rs
+
+- v0.1.1 -> rm NC1NN_py, NC1NN_old, nc1nn_rs par || seq
