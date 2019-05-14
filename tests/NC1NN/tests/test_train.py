@@ -4,12 +4,12 @@ from infinity import inf
 
 from . import NC1NN
 
-def test_update():
+def test_train():
     X_new = np.array([[0.0],[1.0],[2.0],[3.0],[4.0]])
     y_new = np.array([0, 0, 1, 0, 1])
 
     nn = NC1NN()
-    nn.update(X_new, y_new)
+    nn.train(X_new, y_new)
 
     dists, scores = nn.dists, nn.scores_
 

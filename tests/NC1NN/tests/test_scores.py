@@ -12,7 +12,7 @@ def test_scores():
     x_ = np.array([4.0])
 
     nn = NC1NN()
-    nn.update(X, y)
+    nn.train(X, y)
 
     scores_test = {
         0: np.array([0.5, 0.0, inf, 0.0, 0.5]),

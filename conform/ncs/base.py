@@ -1,5 +1,5 @@
 class BaseNCS:
-    def update(self, X, y):
+    def train(self, X, y):
         pass
 
     def scores(self, x, y):

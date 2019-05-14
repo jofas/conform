@@ -21,7 +21,7 @@ use std::marker::Copy;
 
 static MSG_STACK:  &str = "Error stacking";
 static MSG_SHAPE:  &str = "Error with shape";
-static MSG_UPDATE: &str = "Error nn operation failed";
+static MSG_TRAIN:  &str = "Error nn operation failed";
 
 // types {{{
 type Matrix<'a>     = ArrayView2<'a, f64>;
@@ -38,7 +38,7 @@ type LabelsOwned    = Array1<i64>;
 
 type SharedVar<T>   = Arc<Mutex<T>>;
 
-type PyUpdateResult = PyResult<
+type PyTrainResult = PyResult<
     (Py<PyMatrix>,Py<PyLabels>,Py<PyMatrix>,Py<PyVector>)
   >;
 
@@ -115,15 +115,15 @@ macro_rules! into_pyarray {
 #[pymodule]
 fn nc1nn(_py: Python, m: &PyModule) -> PyResult<()> {
 
-  // py_update_seq {{{
-  #[pyfn(m, "update_seq")]
-  fn py_update_seq( py     : Python
+  // py_train_seq {{{
+  #[pyfn(m, "train_seq")]
+  fn py_train_seq( py     : Python
                   , X_new  : &PyMatrix
                   , y_new  : &PyLabels
                   , X_seen : &PyMatrix
                   , y_seen : &PyLabels
                   , dists  : &PyMatrix
-                  , scores : &PyVector ) -> PyUpdateResult
+                  , scores : &PyVector ) -> PyTrainResult
   {
     let (X_new,y_new,X_seen,y_seen,dists,scores) =
       as_array!(X_new,y_new,X_seen,y_seen,dists,scores);
@@ -139,21 +139,21 @@ fn nc1nn(_py: Python, m: &PyModule) -> PyResult<()> {
     let scores_new = Array::zeros((len_new, ));
     let mut scores = stack0(&[scores, scores_new.view()])?;
 
-    update_seq(&X, &y, &mut dists, &mut scores, len_seen)?;
+    train_seq(&X, &y, &mut dists, &mut scores, len_seen)?;
 
     Ok(into_pyarray!(py, X, y, dists, scores))
   }
   // }}}
 
-  // py_update_par {{{
-  #[pyfn(m, "update_par")]
-  fn py_update_par( py     : Python
+  // py_train_par {{{
+  #[pyfn(m, "train_par")]
+  fn py_train_par( py     : Python
                   , X_new  : &PyMatrix
                   , y_new  : &PyLabels
                   , X_seen : &PyMatrix
                   , y_seen : &PyLabels
                   , dists  : &PyMatrix
-                  , scores : &PyVector ) -> PyUpdateResult
+                  , scores : &PyVector ) -> PyTrainResult
   {
     let (X_new,y_new,X_seen,y_seen,dists,scores) =
       as_array!(X_new,y_new,X_seen,y_seen,dists,scores);
@@ -170,7 +170,7 @@ fn nc1nn(_py: Python, m: &PyModule) -> PyResult<()> {
     let mut scores = stack0(&[scores, scores_new.view()])?;
 
     py.allow_threads(||
-      update_par(&X, &y, &mut dists, &mut scores, len_seen)
+      train_par(&X, &y, &mut dists, &mut scores, len_seen)
     )?;
 
     Ok(into_pyarray!(py, X, y, dists, scores))
@@ -222,8 +222,8 @@ fn nc1nn(_py: Python, m: &PyModule) -> PyResult<()> {
   Ok(())
 }
 
-// update_seq {{{
-fn update_seq( X      : &MatrixOwned
+// train_seq {{{
+fn train_seq( X      : &MatrixOwned
              , y      : &LabelsOwned
              , dists  : &mut MatrixOwned
              , scores : &mut VectorOwned
@@ -275,13 +275,13 @@ fn update_seq( X      : &MatrixOwned
   if iter_ok_flag {
     Ok(())
   } else {
-    Err(except(MSG_UPDATE))
+    Err(except(MSG_TRAIN))
   }
 }
 // }}}
 
-// update_par {{{
-fn update_par( X      : &MatrixOwned
+// train_par {{{
+fn train_par( X      : &MatrixOwned
              , y      : &LabelsOwned
              , dists  : &mut MatrixOwned
              , scores : &mut VectorOwned
@@ -333,7 +333,7 @@ fn update_par( X      : &MatrixOwned
   if iter_ok_flag {
     Ok(())
   } else {
-    Err(except(MSG_UPDATE))
+    Err(except(MSG_TRAIN))
   }
 }
 // }}}

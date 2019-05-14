@@ -6,9 +6,9 @@ class CP:
         self.epsilons = epsilons
         self.labels   = labels
 
-    def update(self, X, y):
+    def train(self, X, y):
         X, y = self.__format(X, y)
-        self.A.update(X, y)
+        self.A.train(X, y)
 
     def predict(self, X):
         X = self.__format(X)
@@ -48,7 +48,7 @@ class CP:
         for i in range(X.shape[0]):
             predicted = self.predict(X[i])[0]
             res.update(predicted, y[i])
-            self.update(X[i], y[i])
+            self.train(X[i], y[i])
 
         return res
 

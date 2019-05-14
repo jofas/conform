@@ -27,11 +27,11 @@ def test_scores_from_tutorial():
     y_ = IRIS_SUBSET_Y[24]
 
     nn = NC1NN()
-    nn.update(X, y)
+    nn.train(X, y)
     s1 = nn.scores(x_, y_)
 
     nn = NC1NN_py()
-    nn.update(X, y)
+    nn.train(X, y)
     s2 = nn.scores(x_, y_)
 
     vec_cmp(s1, s2)
@@ -46,11 +46,11 @@ def test_nc_from_tutorial():
     res = [{0.05: [0,1], 0.08: [1], 0.33:[]}]
 
     cp = CP(NC1NN(), epsilons, np.array([0,1]))
-    cp.update(X, y)
+    cp.train(X, y)
     res1 = cp.predict(x_)
 
     cp = CP(NC1NN_py(), epsilons, np.array([0,1]))
-    cp.update(X, y)
+    cp.train(X, y)
     res2 = cp.predict(x_)
 
     assert res == res1 == res2
@@ -72,11 +72,11 @@ def test_scores_from_random_iris_samples():
         y__ = y[indices][-1]
 
         nn = NC1NN()
-        nn.update(X_, y_)
+        nn.train(X_, y_)
         s1 = nn.scores(x__, y__)
 
         nn = NC1NN_py()
-        nn.update(X_, y_)
+        nn.train(X_, y_)
         s2 = nn.scores(x__, y__)
 
         vec_cmp(s1, s2)

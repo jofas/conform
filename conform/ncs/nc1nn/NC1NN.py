@@ -24,11 +24,11 @@ class NC1NN(BaseNCS):
 
         return X[1:], y[1:]
 
-    def update(self, X, y):
+    def train(self, X, y):
         if not self.init: X, y = self.__init(X, y)
 
         self.X, self.y, self.dists, self.scores_ = \
-            nc1nn.update_par( X, y, self.X, self.y
+            nc1nn.train_par( X, y, self.X, self.y
                             , self.dists, self.scores_ )
 
     def scores(self, x, y):
@@ -38,19 +38,19 @@ class NC1NN(BaseNCS):
                                , self.dists, self.scores_)
 
     # for benchmarks -> depr in later versions
-    def update_seq(self, X, y):
+    def train_seq(self, X, y):
         if not self.init: X, y = self.__init(X, y)
 
         self.X, self.y, self.dists, self.scores_ = \
-            nc1nn.update_seq( X, y, self.X, self.y
+            nc1nn.train_seq( X, y, self.X, self.y
                             , self.dists, self.scores_ )
 
     # for benchmarks -> depr in later versions
-    def update_par(self, X, y):
+    def train_par(self, X, y):
         if not self.init: X, y = self.__init(X, y)
 
         self.X, self.y, self.dists, self.scores_ = \
-            nc1nn.update_par( X, y, self.X, self.y
+            nc1nn.train_par( X, y, self.X, self.y
                             , self.dists, self.scores_ )
 
     # for benchmarks -> depr in later versions
@@ -74,9 +74,9 @@ class NC1NN_py(BaseNCS):
         self.scores_ = []
         self.dists   = []
 
-    def update(self, X, y):
+    def train(self, X, y):
         for i in range(X.shape[0]):
-            self.__update(X[i], y[i])
+            self.__train(X[i], y[i])
 
     def scores(self, x_, y_):
         scores = np.zeros(self.X.shape[0] + 1)
@@ -98,7 +98,7 @@ class NC1NN_py(BaseNCS):
         scores[-1] = self.__score(d_eq, d_neq)
         return scores
 
-    def __update(self, x_, y_):
+    def __train(self, x_, y_):
         d_eq, d_neq, d_map = self.nn(x_, y_)
 
         # update
