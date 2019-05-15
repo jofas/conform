@@ -28,13 +28,14 @@ def test_scores_from_tutorial():
 
     nn = NC1NN()
     nn.train(X, y)
-    s1 = nn.scores(x_, y_)
+    s1 = nn.scores(x_, [0,1])
 
     nn = NC1NN_py()
     nn.train(X, y)
-    s2 = nn.scores(x_, y_)
+    s2 = nn.scores(x_, [0,1])
 
-    vec_cmp(s1, s2)
+    for i in range(2):
+        vec_cmp(s1[i], s2[i])
 
 def test_nc_from_tutorial():
     X  = np.array(IRIS_SUBSET_X[:24])
@@ -73,10 +74,11 @@ def test_scores_from_random_iris_samples():
 
         nn = NC1NN()
         nn.train(X_, y_)
-        s1 = nn.scores(x__, y__)
+        s1 = nn.scores(x__, [0, 1, 2])
 
         nn = NC1NN_py()
         nn.train(X_, y_)
-        s2 = nn.scores(x__, y__)
+        s2 = nn.scores(x__, [0, 1, 2])
 
-        vec_cmp(s1, s2)
+        for (v1, v2) in zip(s1, s2):
+            vec_cmp(v1, v2)

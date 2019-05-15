@@ -5,7 +5,6 @@ from copy import copy
 from infinity import inf
 
 from . import nc1nn
-
 from ..base import CPBaseNCS
 
 class NC1NN(CPBaseNCS):
@@ -31,11 +30,13 @@ class NC1NN(CPBaseNCS):
             nc1nn.train_par( X, y, self.X, self.y
                             , self.dists, self.scores_ )
 
-    def scores(self, x, y):
-        if not self.init: return np.array([0.0])
+    def scores(self, x, labels):
+        if not self.init:
+            return np.array([[0.0] for _ in labels])
 
-        return nc1nn.scores_par( x, y, self.X, self.y
-                               , self.dists, self.scores_)
+        return np.array([nc1nn.scores_par(
+            x, y, self.X, self.y, self.dists, self.scores_
+        ) for y in labels])
 
     # for benchmarks -> depr in later versions
     def train_seq(self, X, y):
@@ -54,18 +55,22 @@ class NC1NN(CPBaseNCS):
                             , self.dists, self.scores_ )
 
     # for benchmarks -> depr in later versions
-    def scores_seq(self, x, y):
-        if not self.init: return np.array([0.0])
+    def scores_seq(self, x, labels):
+        if not self.init:
+            return np.array([[0.0] for _ in labels])
 
-        return nc1nn.scores_par( x, y, self.X, self.y
-                               , self.dists, self.scores_)
+        return np.array([nc1nn.scores_seq(
+            x, y, self.X, self.y, self.dists, self.scores_
+        ) for y in labels])
 
     # for benchmarks -> depr in later versions
-    def scores_par(self, x, y):
-        if not self.init: return np.array([0.0])
+    def scores_par(self, x, labels):
+        if not self.init:
+            return np.array([[0.0] for _ in labels])
 
-        return nc1nn.scores_par( x, y, self.X, self.y
-                               , self.dists, self.scores_)
+        return np.array([nc1nn.scores_par(
+            x, y, self.X, self.y, self.dists, self.scores_
+        ) for y in labels])
 
 class NC1NN_py(CPBaseNCS):
     def __init__(self):
@@ -78,25 +83,30 @@ class NC1NN_py(CPBaseNCS):
         for i in range(X.shape[0]):
             self.__train(X[i], y[i])
 
-    def scores(self, x_, y_):
-        scores = np.zeros(self.X.shape[0] + 1)
-        d_eq, d_neq, d_map = self.nn(x_, y_)
+    def scores(self, x_, labels):
+        res = []
 
-        for i in range(self.X.shape[0]):
-            scores[i] = self.scores_[i]
+        for y_ in labels:
+            scores = np.zeros(self.X.shape[0] + 1)
+            d_eq, d_neq, d_map = self.nn(x_, y_)
 
-            neq, d = d_map[i]
-            if neq:
-                if self.dists[i][1] > d:
-                    eq_d = self.dists[i][0]; neq_d = d
-                    scores[i] = self.__score(eq_d, neq_d)
-            else:
-                if self.dists[i][0] > d:
-                    eq_d = d; neq_d = self.dists[i][1]
-                    scores[i] = self.__score(eq_d, neq_d)
+            for i in range(self.X.shape[0]):
+                scores[i] = self.scores_[i]
 
-        scores[-1] = self.__score(d_eq, d_neq)
-        return scores
+                neq, d = d_map[i]
+                if neq:
+                    if self.dists[i][1] > d:
+                        eq_d = self.dists[i][0]; neq_d = d
+                        scores[i] = self.__score(eq_d, neq_d)
+                else:
+                    if self.dists[i][0] > d:
+                        eq_d = d; neq_d = self.dists[i][1]
+                        scores[i] = self.__score(eq_d, neq_d)
+
+            scores[-1] = self.__score(d_eq, d_neq)
+            res.append(scores)
+
+        return np.array(res)
 
     def __train(self, x_, y_):
         d_eq, d_neq, d_map = self.nn(x_, y_)

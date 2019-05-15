@@ -19,10 +19,10 @@ def test_scores():
         1: np.array([0.5, 0.0, 2.0, 2.0, 2.0]),
     }
 
+    scores = nn.scores(x_, list(range(2)))
     for i in range(2):
-        scores = nn.scores(x_, i)
-        vec_cmp(scores, scores_test[i])
+        vec_cmp(scores[i], scores_test[i])
 
 def test_scores_empty():
     nn = NC1NN()
-    assert nn.scores(np.array([0.0]), 0)[0] == 0.0
+    assert nn.scores(np.array([0.0]), [0])[0,0] == 0.0
