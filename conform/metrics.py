@@ -1,3 +1,5 @@
+import numpy as np
+
 class CPMetrics:
     def __init__(self, epsilons):
         self.eps = {e: EpsilonMetrics() for e in epsilons}
@@ -23,8 +25,15 @@ class EpsilonMetrics:
         self.emp = 0
         self.err = { "emp": 0, "mul": 0, "sin": 0 }
 
+    def __argmax(self, y):
+        if type(y) is np.ndarray:
+            return np.argmax(y)
+        return y
+
     def update(self, predicted, y):
         self.n += 1
+
+        y = self.__argmax(y)
 
         if len(predicted) > 1:
             self.mul += 1
