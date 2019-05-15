@@ -6,9 +6,9 @@ from infinity import inf
 
 from . import nc1nn
 
-from ..base import BaseNCS
+from ..base import CPBaseNCS
 
-class NC1NN(BaseNCS):
+class NC1NN(CPBaseNCS):
     def __init__(self):
         self.init    = False
         self.X       = None
@@ -67,7 +67,7 @@ class NC1NN(BaseNCS):
         return nc1nn.scores_par( x, y, self.X, self.y
                                , self.dists, self.scores_)
 
-class NC1NN_py(BaseNCS):
+class NC1NN_py(CPBaseNCS):
     def __init__(self):
         self.X       = np.array([])
         self.y       = np.array([])

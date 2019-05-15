@@ -1,4 +1,4 @@
-from conform.cp import CP
+from conform import CP
 from conform.ncs import NC1NN
 
 import h5py
@@ -40,9 +40,9 @@ def main():
         X, y = load_usps_random()
         epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
         cp = CP(NC1NN(), epsilons, np.arange(10))
-        res = cp.score_online(X, y)
-        print(i)
-        print(res)
+        res = cp.score_online(X[:10], y[:10])
+        #print(i)
+        #print(res)
 
 if __name__ == '__main__':
     main()
