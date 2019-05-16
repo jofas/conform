@@ -2,17 +2,7 @@ import numpy as np
 
 from .base import CPBase
 from .metrics import CPMetrics
-from .ncs.base import CPBaseNCS, ICPBaseNCS
-
-class ICP(CPBase):
-    def __init__(self, A, epsilons, labels):
-        if ICPBaseNCS not in type(A).__bases__:
-            raise Exception("Non-conformity score invalid")
-        super().__init__(A, epsilons, labels)
-
-    def calibrate(self, X, y):
-        X, y = super().format(X, y)
-        self.A.calibrate(X, y)
+from .ncs.base import CPBaseNCS
 
 class CP(CPBase):
     def __init__(self, A, epsilons, labels):

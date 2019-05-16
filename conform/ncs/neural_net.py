@@ -1,20 +1,17 @@
 import numpy as np
 
-from .base import ICPBaseNCS
+from .base import CPBaseNCS, ICPBaseNCS
 
-# sum, max, diff
+class __NCNeuralNetBase:
+    def __init__( self, train_, predict_, scorer, gamma):
+        self.init     = False
+        self.X        = None
+        self.y        = None
 
-class NCNeuralNetICP(ICPBaseNCS):
-    def __init__( self, train, predict, scorer = "max"
-                , gamma = 0.0 ):
-        self.init    = False
-        self.X       = None
-        self.y       = None
-
-        self.train   = train
-        self.predict = predict
-        self.scorer  = self.__scorer(scorer)
-        self.gamma   = gamma
+        self.train_   = train_
+        self.predict_ = predict_
+        self.scorer   = self.__scorer(scorer)
+        self.gamma    = gamma
 
         self.scores_ = []
 
@@ -58,15 +55,29 @@ class NCNeuralNetICP(ICPBaseNCS):
 
     def train(self, X, y):
         self.__append(X, y)
-        self.train(self.X, self.y)
+        self.train_(self.X, self.y)
 
     def calibrate(self, X, y):
-        pred = self.predict(X)
+        pred = self.predict_(X)
         for i in range(X.shape[0]):
             label = np.argmax(y[i])
             self.scores_.append(self.scorer(pred[i], label))
 
     def scores(self, x, labels):
-        pred = self.predict(x.reshape(1, -1))
+        pred = self.predict_(x.reshape(1, -1))
         return [self.scores_ + [self.scorer(pred[0], l)] \
             for l in labels]
+
+class NCNeuralNetCP(__NCNeuralNetBase, CPBaseNCS):
+    def __init__( self, train_, predict_, scorer = "max"
+                , gamma = 0.0 ):
+        super().__init__(train_, predict_, scorer, gamma)
+
+    def train(self, X, y):
+        super().train(X, y)
+        self.calibrate(X, y)
+
+class NCNeuralNetICP(__NCNeuralNetBase, ICPBaseNCS):
+    def __init__( self, train_, predict_, scorer = "max"
+                , gamma = 0.0 ):
+        super().__init__(train_, predict_, scorer, gamma)

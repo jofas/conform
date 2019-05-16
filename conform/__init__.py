@@ -1,1 +1,2 @@
-from .cp import CP, ICP
+from .cp import CP
+from .icp import ICP

@@ -4,8 +4,6 @@
 
 - NNR, Ridge Regression, DT, RF
 
-- NN CP
-
 - alternative output 
 
 - smoothed

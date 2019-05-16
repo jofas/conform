@@ -1,5 +1,6 @@
 from conform import CP, ICP
-from conform.ncs import NC1NN, NCNeuralNetICP
+from conform.ncs import NC1NN, NCNeuralNetICP \
+                      , NCNeuralNetCP
 
 import h5py
 import numpy as np
@@ -43,9 +44,28 @@ def usps_nc1nn():
         print(i)
         print(res)
 
-def neural_net():
+def compile_model(in_dim, out_dim):
     from keras.models import Sequential
     from keras.layers import Dense
+
+    # keras
+    model = Sequential()
+
+    model.add(Dense( units=128, activation='tanh'
+                   , input_dim=in_dim ))
+    model.add(Dense(units=128, activation='tanh'))
+    model.add(Dense( units=out_dim
+                   , activation='softmax'))
+
+    model.compile(
+        loss='mean_squared_error',
+        optimizer='adam',
+        metrics=['accuracy']
+    )
+
+    return model
+
+def neural_net():
 
     X, y = load_usps_random()
     y = np.array(
@@ -66,27 +86,25 @@ def neural_net():
     X_test  = X[2*split:]
     y_test  = y[2*split:]
 
-    # keras
-    model = Sequential()
-
-    model.add(Dense( units=128, activation='tanh'
-                   , input_dim=X_train.shape[1] ))
-    model.add(Dense(units=128, activation='tanh'))
-    model.add(Dense( units=y_train.shape[1]
-                   , activation='softmax'))
-
-    model.compile(
-        loss='mean_squared_error',
-        optimizer='adam',
-        metrics=['accuracy']
-    )
-
+    # icp
+    model = compile_model(X.shape[1], y.shape[1])
     train = lambda X, y: model.fit(X, y, epochs=5)
     predict = lambda X: model.predict(X)
     icp = ICP(NCNeuralNetICP(train, predict), [0.05], list(range(10)))
-
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
+    res = icp.score(X_test, y_test)
+    print(res)
+
+    # cp offline
+    X_train = np.vstack((X_train, X_cal))
+    y_train = np.vstack((y_train, y_cal))
+
+    model = compile_model(X.shape[1], y.shape[1])
+    train = lambda X, y: model.fit(X, y, epochs=5)
+    predict = lambda X: model.predict(X)
+    cp = CP(NCNeuralNetCP(train, predict), [0.05], list(range(10)))
+    cp.train(X_train, y_train)
     res = icp.score(X_test, y_test)
     print(res)
 
