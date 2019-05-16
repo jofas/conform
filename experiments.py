@@ -1,6 +1,7 @@
 from conform import CP, ICP
 from conform.ncs import NC1NN, NCNeuralNetICP \
-                      , NCNeuralNetCP
+                      , NCNeuralNetCP, NCDecisionTreeICP \
+                      , NCDecisionTreeCP
 
 import h5py
 import numpy as np
@@ -88,8 +89,10 @@ def neural_net():
 
     # icp
     model = compile_model(X.shape[1], y.shape[1])
-    train = lambda X, y: model.fit(X, y, epochs=5)
+
+    train = lambda X, y: model.fit(X, y, epochs=5, verbose=0)
     predict = lambda X: model.predict(X)
+
     icp = ICP(NCNeuralNetICP(train, predict), [0.05], list(range(10)))
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
@@ -101,15 +104,48 @@ def neural_net():
     y_train = np.vstack((y_train, y_cal))
 
     model = compile_model(X.shape[1], y.shape[1])
-    train = lambda X, y: model.fit(X, y, epochs=5)
-    predict = lambda X: model.predict(X)
+
     cp = CP(NCNeuralNetCP(train, predict), [0.05], list(range(10)))
     cp.train(X_train, y_train)
+    res = cp.score(X_test, y_test)
+    print(res)
+
+def descision_tree():
+    X, y = load_usps_random()
+
+    X_cal = X[:200]
+    y_cal = y[:200]
+
+    X     = X[200:]
+    y     = y[200:]
+
+    split = int(X.shape[0] / 3)
+
+    X_train = X[:2*split]
+    y_train = y[:2*split]
+
+    X_test  = X[2*split:]
+    y_test  = y[2*split:]
+
+    # icp
+    icp = ICP(NCDecisionTreeICP(min_samples_leaf=50), [0.05], list(range(10)))
+    icp.train(X_train, y_train)
+    icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
     print(res)
 
+    # cp offline
+    X_train = np.vstack((X_train, X_cal))
+    y_train = np.append(y_train, y_cal)
+
+    cp = CP(NCDecisionTreeCP(min_samples_leaf=50), [0.05], list(range(10)))
+    cp.train(X_train, y_train)
+    res = cp.score(X_test, y_test)
+    print(res)
+
 def main():
-    neural_net()
+    #neural_net()
+    descision_tree()
 
 if __name__ == '__main__':
     main()

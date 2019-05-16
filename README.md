@@ -2,9 +2,11 @@
 
 ## TODO
 
-- NNR, Ridge Regression, DT, RF
+- RF
 
-- alternative output 
+- experiments suite (better metrics)
+
+- alternative output (CP, ICP)
 
 - smoothed
 
@@ -12,13 +14,17 @@
 
 - Venn
 
+- Regression
+
+- scores -> vectorized until the end
+
+- label map ?
+
 - ACP ?
 
 - nc1nn -> ICP compatible
 
 - scores -> List to optimized search tree for queries
-
-- experiments suite (better metrics)
 
 - move more work from NCS to CPs -> 
     CPs provide API to scores (may remove in v0.1.1)

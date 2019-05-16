@@ -15,6 +15,21 @@ class __NCNeuralNetBase:
 
         self.scores_ = []
 
+    def train(self, X, y):
+        self.__append(X, y)
+        self.train_(self.X, self.y)
+
+    def calibrate(self, X, y):
+        pred = self.predict_(X)
+        for i in range(X.shape[0]):
+            label = np.argmax(y[i])
+            self.scores_.append(self.scorer(pred[i], label))
+
+    def scores(self, x, labels):
+        pred = self.predict_(x.reshape(1, -1))
+        return [self.scores_ + [self.scorer(pred[0], l)] \
+            for l in labels]
+
     def __scorer(self, scorer):
         if type(scorer) is str:
             if scorer == "sum" : return self.__sum
@@ -52,21 +67,6 @@ class __NCNeuralNetBase:
         else:
             self.X = np.vstack((self.X, X))
             self.y = np.vstack((self.y, y))
-
-    def train(self, X, y):
-        self.__append(X, y)
-        self.train_(self.X, self.y)
-
-    def calibrate(self, X, y):
-        pred = self.predict_(X)
-        for i in range(X.shape[0]):
-            label = np.argmax(y[i])
-            self.scores_.append(self.scorer(pred[i], label))
-
-    def scores(self, x, labels):
-        pred = self.predict_(x.reshape(1, -1))
-        return [self.scores_ + [self.scorer(pred[0], l)] \
-            for l in labels]
 
 class NCNeuralNetCP(__NCNeuralNetBase, CPBaseNCS):
     def __init__( self, train_, predict_, scorer = "max"
