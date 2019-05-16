@@ -2,25 +2,23 @@
 
 ## TODO
 
-- RF
-
-- experiments suite (better metrics)
-
-- alternative output (CP, ICP)
-
-- smoothed
-
 - MCP
 
 - Venn
 
 - Regression
 
+- experiments suite
+
+- alternative output (CP, ICP) 
+
 - scores -> vectorized until the end
 
 - label map ?
 
 - ACP ?
+
+- decision_tree -> apply ... to predict_proba
 
 - nc1nn -> ICP compatible
 

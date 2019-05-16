@@ -10,13 +10,13 @@ class CP(CPBase):
             raise Exception("Non-conformity score invalid")
         super().__init__(A, epsilons, labels)
 
-    def score_online(self, X, y):
+    def score_online(self, X, y, smoothed = False):
         X, y = super().format(X, y)
 
         res = CPMetrics(self.epsilons)
 
         for i in range(X.shape[0]):
-            predicted = self.predict(X[i])[0]
+            predicted = self.predict(X[i], smoothed)[0]
             res.update(predicted, y[i])
             self.train(X[i], y[i])
 

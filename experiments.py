@@ -37,13 +37,18 @@ def load_usps_random():
     return X, y
 
 def usps_nc1nn():
-    for i in range(10):
-        X, y = load_usps_random()
-        epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
-        cp = CP(NC1NN(), epsilons, np.arange(10))
-        res = cp.score_online(X[:10], y[:10])
-        print(i)
-        print(res)
+    X, y = load_usps_random()
+    epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
+
+    cp = CP(NC1NN(), epsilons, np.arange(10))
+    res = cp.score_online(X, y)
+    print("normal")
+    print(res.accuracy())
+
+    cp = CP(NC1NN(), epsilons, np.arange(10))
+    res = cp.score_online(X, y, smoothed = True)
+    print("smoothed")
+    print(res.accuracy())
 
 def compile_model(in_dim, out_dim):
     from keras.models import Sequential
@@ -98,6 +103,7 @@ def neural_net():
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
     print(res)
+    print(res.accuracy())
 
     # cp offline
     X_train = np.vstack((X_train, X_cal))
@@ -109,6 +115,7 @@ def neural_net():
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
+    print(res.accuracy())
 
 def descision_tree():
     X, y = load_usps_random()
@@ -133,6 +140,7 @@ def descision_tree():
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
     print(res)
+    print(res.accuracy())
 
     # cp offline
     X_train = np.vstack((X_train, X_cal))
@@ -142,10 +150,12 @@ def descision_tree():
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
+    print(res.accuracy())
 
 def main():
+    usps_nc1nn()
     #neural_net()
-    descision_tree()
+    #descision_tree()
 
 if __name__ == '__main__':
     main()

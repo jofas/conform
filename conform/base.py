@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 from .metrics import CPMetrics
 
@@ -12,7 +13,7 @@ class CPBase:
         X, y = self.format(X, y)
         self.A.train(X, y)
 
-    def predict(self, X):
+    def predict(self, X, smoothed = False):
         X = self.format(X)
         res = [ None for _ in range(X.shape[0]) ]
 
@@ -22,7 +23,8 @@ class CPBase:
             scores = self.A.scores(X[i], self.labels)
 
             for (label, s) in zip(self.labels, scores):
-                p = self.__p_val(s)
+                p = self.__p_val_smoothed(s) if smoothed \
+                    else self.__p_val(s)
 
                 for epsilon in self.epsilons:
                     if p > epsilon:
@@ -32,11 +34,11 @@ class CPBase:
 
         return res
 
-    def score(self, X, y):
+    def score(self, X, y, smoothed = False):
         X, y = self.format(X, y)
 
         res = CPMetrics(self.epsilons)
-        predicted = self.predict(X)
+        predicted = self.predict(X, smoothed)
 
         for i in range(X.shape[0]):
             res.update(predicted[i], y[i])
@@ -64,6 +66,14 @@ class CPBase:
     def __reshape_if_scalar(self, y):
         return np.array([y]) if type(y) is not np.ndarray \
             else y
+
+    def __p_val_smoothed(self, scores):
+        bigger = 0; eq = 0; s_ = scores[-1]
+        for s in scores:
+            if s >  s_: bigger += 1
+            if s == s_: eq += 1
+        return (bigger + random.uniform(0.0, 1.0) * eq) \
+             / len(scores)
 
     def __p_val(self, scores):
         return sum([1 for s in scores if s >= scores[-1]])\
