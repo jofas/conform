@@ -10,7 +10,8 @@
 
 - experiments suite
 
-- alternative output (CP, ICP) 
+- alternative output (CP, ICP) (tuple w. confidence, random
+    prediction for muls, emps)
 
 - scores -> vectorized until the end
 

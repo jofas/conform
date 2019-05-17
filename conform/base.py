@@ -4,16 +4,17 @@ import random
 from .metrics import CPMetrics
 
 class CPBase:
-    def __init__(self, A, epsilons, labels):
+    def __init__(self, A, epsilons, labels, smoothed):
         self.A        = A
         self.epsilons = epsilons
         self.labels   = labels
+        self.smoothed = smoothed
 
     def train(self, X, y):
         X, y = self.format(X, y)
         self.A.train(X, y)
 
-    def predict(self, X, smoothed = False):
+    def predict(self, X):
         X = self.format(X)
         res = [ None for _ in range(X.shape[0]) ]
 
@@ -23,8 +24,8 @@ class CPBase:
             scores = self.A.scores(X[i], self.labels)
 
             for (label, s) in zip(self.labels, scores):
-                p = self.__p_val_smoothed(s) if smoothed \
-                    else self.__p_val(s)
+                p = self.__p_val_smoothed(s) \
+                    if self.smoothed else self.__p_val(s)
 
                 for epsilon in self.epsilons:
                     if p > epsilon:
@@ -34,11 +35,11 @@ class CPBase:
 
         return res
 
-    def score(self, X, y, smoothed = False):
+    def score(self, X, y):
         X, y = self.format(X, y)
 
         res = CPMetrics(self.epsilons)
-        predicted = self.predict(X, smoothed)
+        predicted = self.predict(X)
 
         for i in range(X.shape[0]):
             res.update(predicted[i], y[i])
