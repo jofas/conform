@@ -14,15 +14,13 @@ def test_scores():
     nn = NC1NN()
     nn.train(X, y)
 
-    scores_test = {
-        0: np.array([0.5, 0.0, inf, 0.0, 0.5]),
-        1: np.array([0.5, 0.0, 2.0, 2.0, 2.0]),
-    }
+    score_test = {0: 0.5, 1: 2.0}
 
-    scores = nn.scores(x_, list(range(2)))
+    score = nn.score(x_, list(range(2)))
+
     for i in range(2):
-        vec_cmp(scores[i], scores_test[i])
+        assert score[i] == score_test[i]
 
-def test_scores_empty():
+def test_score_empty():
     nn = NC1NN()
-    assert nn.scores(np.array([0.0]), [0])[0,0] == 0.0
+    assert nn.score(np.array([0.0]), [0])[0,0] == 0.0

@@ -5,9 +5,9 @@ from copy import copy
 from infinity import inf
 
 from . import nc1nn
-from ..base import CPBaseNCS
+from ..base import NCSBase
 
-class NC1NN(CPBaseNCS):
+class NC1NN(NCSBase):
     def __init__(self):
         self.init    = False
         self.X       = None
@@ -30,13 +30,16 @@ class NC1NN(CPBaseNCS):
             nc1nn.train_par( X, y, self.X, self.y
                             , self.dists, self.scores_ )
 
-    def scores(self, x, labels):
+    def scores(self, X, y):
+        return self.scores_
+
+    def score(self, x, labels):
         if not self.init:
             return np.array([[0.0] for _ in labels])
 
         return np.array([nc1nn.scores_par(
             x, y, self.X, self.y, self.dists, self.scores_
-        ) for y in labels])
+        )[-1] for y in labels])
 
     # for benchmarks -> depr in later versions
     def train_seq(self, X, y):
@@ -72,7 +75,7 @@ class NC1NN(CPBaseNCS):
             x, y, self.X, self.y, self.dists, self.scores_
         ) for y in labels])
 
-class NC1NN_py(CPBaseNCS):
+class NC1NN_py(NCSBase):
     def __init__(self):
         self.X       = np.array([])
         self.y       = np.array([])
@@ -83,7 +86,10 @@ class NC1NN_py(CPBaseNCS):
         for i in range(X.shape[0]):
             self.__train(X[i], y[i])
 
-    def scores(self, x_, labels):
+    def scores(self, X, y):
+        return self.scores_
+
+    def score(self, x_, labels):
         res = []
 
         for y_ in labels:
@@ -104,7 +110,7 @@ class NC1NN_py(CPBaseNCS):
                         scores[i] = self.__score(eq_d, neq_d)
 
             scores[-1] = self.__score(d_eq, d_neq)
-            res.append(scores)
+            res.append(scores[-1])
 
         return np.array(res)
 

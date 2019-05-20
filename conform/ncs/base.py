@@ -1,10 +1,9 @@
-class CPBaseNCS:
+class NCSBase:
     def train(self, X, y):
         pass
 
-    def scores(self, x, labels):
+    def scores(self, X, y):
         pass
 
-class ICPBaseNCS(CPBaseNCS):
-    def calibrate(self, X, y):
+    def score(self, x, labels):
         pass

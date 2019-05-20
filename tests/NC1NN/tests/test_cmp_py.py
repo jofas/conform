@@ -20,7 +20,7 @@ IRIS_SUBSET_Y = [ 0, 0, 0, 0, 0
                 , 1, 1, 0, 1, 0
                 , 0, 1, 0, 0, 1 ]
 
-def test_scores_from_tutorial():
+def test_score_from_tutorial():
     X  = np.array(IRIS_SUBSET_X[:24])
     y  = np.array(IRIS_SUBSET_Y[:24])
     x_ = np.array(IRIS_SUBSET_X[24])
@@ -28,14 +28,14 @@ def test_scores_from_tutorial():
 
     nn = NC1NN()
     nn.train(X, y)
-    s1 = nn.scores(x_, [0,1])
+    s1 = nn.score(x_, [0,1])
 
     nn = NC1NN_py()
     nn.train(X, y)
-    s2 = nn.scores(x_, [0,1])
+    s2 = nn.score(x_, [0,1])
 
     for i in range(2):
-        vec_cmp(s1[i], s2[i])
+        assert s1[i] == s2[i]
 
 def test_nc_from_tutorial():
     X  = np.array(IRIS_SUBSET_X[:24])
@@ -74,11 +74,11 @@ def test_scores_from_random_iris_samples():
 
         nn = NC1NN()
         nn.train(X_, y_)
-        s1 = nn.scores(x__, [0, 1, 2])
+        s1 = nn.score(x__, [0, 1, 2])
 
         nn = NC1NN_py()
         nn.train(X_, y_)
-        s2 = nn.scores(x__, [0, 1, 2])
+        s2 = nn.score(x__, [0, 1, 2])
 
         for (v1, v2) in zip(s1, s2):
-            vec_cmp(v1, v2)
+            assert v1 == v2

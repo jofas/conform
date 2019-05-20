@@ -2,50 +2,62 @@ import numpy as np
 import random
 
 from .metrics import CPMetrics
-from .ncs.base import *
+from .ncs.base import NCSBase
 
-def non_mcp_mapper(x, y): return y
+def non_mcp_mapper(x, y): return 0
 
 class CPBase:
-    def __init__(self, A, epsilons, labels, smoothed):
-        self.A        = A
-        self.epsilons = epsilons
-        self.labels   = labels
-        self.smoothed = smoothed
+    def __init__( self, A, epsilons, labels, smoothed
+                , map = non_mcp_mapper):
 
-        self.init     = False
-        self.X        = None
-        self.y        = None
+        if NCSBase not in type(A).__bases__:
+            raise Exception("Non-conformity score invalid")
 
-    def train(self, X, y, append = True):
+        self.A          = A
+        self.epsilons   = epsilons
+        self.labels     = labels
+        self.smoothed   = smoothed
+        self.map        = map
+
+        self.init_train = False
+        self.X_train    = None
+        self.y_train    = None
+
+        self.nc_scores  = None
+        self.ks         = None
+
+    def train(self, X, y, override = False):
         X, y = self.format(X, y)
-        if append:
-            self.X, self.y = self.append(
-                self.X, self.y, X, y, self.init
+
+        if not override and self.init_train:
+            self.X_train, self.y_train = self.append(
+                self.X_train, self.y_train, X, y
             )
         else:
-            self.X, self.y = X, y
+            self.X_train, self.y_train = X, y
+            self.init_train            = True
 
-        self.A.train(self.X, self.y)
+        self.A.train(self.X_train, self.y_train)
 
     def predict(self, X):
         X = self.format(X)
-        res = [ None for _ in range(X.shape[0]) ]
 
-        for i in range(X.shape[0]):
+        res = []
+        for x in X:
             predicted = { e: [] for e in self.epsilons }
 
-            scores = self.A.scores(X[i], self.labels)
+            score_per_label = self.A.score(x, self.labels)
 
-            for (label, s) in zip(self.labels, scores):
-                p = self.__p_val_smoothed(s) \
-                    if self.smoothed else self.__p_val(s)
+            for (l,s) in zip(self.labels,score_per_label):
+                k = self.map(x, l)
+                p = self.__p_val_smoothed(s,k) \
+                    if self.smoothed else self.__p_val(s,k)
 
                 for epsilon in self.epsilons:
                     if p > epsilon:
-                        predicted[epsilon].append(label)
+                        predicted[epsilon].append(l)
 
-            res[i] = predicted
+            res.append(predicted)
 
         return res
 
@@ -55,10 +67,40 @@ class CPBase:
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
 
-        for i in range(X.shape[0]):
-            res.update(predicted[i], y[i])
+        for (p_, y_) in zip(predicted, y):
+            res.update(p_, y_)
 
         return res
+
+    def compute_nc_scores(self, X, y):
+        self.nc_scores = self.A.scores(X, y)
+        self.__set_ks(X, y)
+
+    def __p_val_smoothed(self, s, k):
+        eq, greater = self.__p_val_counter(s, k)
+        return (greater + random.uniform(0.0, 1.0) * eq) \
+             / (len(self.nc_scores) + 1)
+
+    def __p_val(self, s, k):
+        eq, greater = self.__p_val_counter(s, k)
+        return (eq + greater) / (len(self.nc_scores) + 1)
+
+    def __p_val_counter(self, s, k):
+        eq = 0; greater = 0;
+        for (k_, s_) in zip(self.ks, self.nc_scores):
+            if k_ == k:
+                if s_ == s: eq += 1
+                if s_ >  s: greater += 1
+        return eq + 1, greater
+
+    def __set_ks(self, X, y):
+        self.ks = [self.map(x_,y_) for (x_,y_) in zip(X,y)]
+
+    def append(self, X, y, X_, y_):
+        if len(y.shape) > 1:
+            return np.vstack((X, X_)), np.vstack((y, y_))
+        else:
+            return np.vstack((X, X_)), np.append(y, y_)
 
     def format(self, X, y = None):
         X = self.__list_to_ndarray(X)
@@ -71,14 +113,6 @@ class CPBase:
 
         return X
 
-    def append(self, X, y, X_, y_, init):
-        if not init:
-            return X_, y_
-        elif len(y.shape) > 1:
-            return np.vstack((X, X_)), np.vstack((y, y_))
-        else:
-            return np.vstack((X, X_)), np.append(y, y_)
-
     def __list_to_ndarray(self, z):
         return np.array(z) if type(z) is list else z
 
@@ -90,56 +124,45 @@ class CPBase:
         return np.array([y]) if type(y) is not np.ndarray \
             else y
 
-    def __p_val_smoothed(self, scores):
-        bigger = 0; eq = 0; s_ = scores[-1]
-        for s in scores:
-            if s >  s_: bigger += 1
-            if s == s_: eq += 1
-        return (bigger + random.uniform(0.0, 1.0) * eq) \
-             / len(scores)
-
-    def __p_val(self, scores):
-        return sum([1 for s in scores if s >= scores[-1]])\
-             / len(scores)
-
 class CP(CPBase):
     def __init__( self, A, epsilons, labels
                 , smoothed = False ):
-        if CPBaseNCS not in type(A).__bases__:
-            raise Exception("Non-conformity score invalid")
         super().__init__(A, epsilons, labels, smoothed)
 
+    def train(self, X, y, override = False):
+        super().train(X, y)
+        self.compute_nc_scores(self.X_train, self.y_train)
+
     def score_online(self, X, y):
-        X, y = super().format(X, y)
+        X, y = self.format(X, y)
 
         res = CPMetrics(self.epsilons)
 
-        for i in range(X.shape[0]):
-            predicted = self.predict(X[i])[0]
-            res.update(predicted, y[i])
-            self.train(X[i], y[i])
+        for (x_, y_) in zip(X, y):
+            predicted = self.predict(x)[0]
+            res.update(predicted, y_)
+            self.train(x_, y_)
 
         return res
 
 class ICP(CPBase):
     def __init__( self, A, epsilons, labels
                 , smoothed = False ):
-        if ICPBaseNCS not in type(A).__bases__:
-            raise Exception("Non-conformity score invalid")
-
-        self.cal_init = False
+        self.init_cal = False
         self.X_cal    = None
         self.y_cal    = None
 
         super().__init__(A, epsilons, labels, smoothed)
 
-    def calibrate(self, X, y, append = True):
+    def calibrate(self, X, y, override = False):
         X, y = self.format(X, y)
-        if append:
+
+        if not override and self.init_cal:
             self.X_cal, self.y_cal = self.append(
-                self.X_cal, self.y_cal, X, y, self.cal_init
+                self.X_cal, self.y_cal, X, y
             )
         else:
             self.X_cal, self.y_cal = X, y
+            self.init_cal          = True
 
-        self.A.calibrate(self.X_cal, self.y_cal)
+        self.compute_nc_scores(self.X_cal, self.y_cal)

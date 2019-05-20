@@ -2,7 +2,7 @@
 
 ## TODO
 
-- MCP (labels -> mapper, epsilons -> [[]]) impl as class
+- MCP
 
 - Venn
 
@@ -13,13 +13,11 @@
 
 - ACP ?
 
-- nicer labels API
+- nicer labels API (labels map?)
 
 - experiments suite
 
 - scores -> vectorized until the end
-
-- label map ?
 
 - decision_tree -> apply ... to predict_proba
 
