@@ -1,2 +1,1 @@
-from .cp import CP
-from .icp import ICP
+from .conform import CP, ICP

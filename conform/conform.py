@@ -2,6 +2,9 @@ import numpy as np
 import random
 
 from .metrics import CPMetrics
+from .ncs.base import *
+
+def non_mcp_mapper(x, y): return y
 
 class CPBase:
     def __init__(self, A, epsilons, labels, smoothed):
@@ -20,9 +23,10 @@ class CPBase:
             self.X, self.y = self.append(
                 self.X, self.y, X, y, self.init
             )
-            self.A.train(self.X, self.y)
         else:
-            self.A.train(X, y)
+            self.X, self.y = X, y
+
+        self.A.train(self.X, self.y)
 
     def predict(self, X):
         X = self.format(X)
@@ -97,3 +101,45 @@ class CPBase:
     def __p_val(self, scores):
         return sum([1 for s in scores if s >= scores[-1]])\
              / len(scores)
+
+class CP(CPBase):
+    def __init__( self, A, epsilons, labels
+                , smoothed = False ):
+        if CPBaseNCS not in type(A).__bases__:
+            raise Exception("Non-conformity score invalid")
+        super().__init__(A, epsilons, labels, smoothed)
+
+    def score_online(self, X, y):
+        X, y = super().format(X, y)
+
+        res = CPMetrics(self.epsilons)
+
+        for i in range(X.shape[0]):
+            predicted = self.predict(X[i])[0]
+            res.update(predicted, y[i])
+            self.train(X[i], y[i])
+
+        return res
+
+class ICP(CPBase):
+    def __init__( self, A, epsilons, labels
+                , smoothed = False ):
+        if ICPBaseNCS not in type(A).__bases__:
+            raise Exception("Non-conformity score invalid")
+
+        self.cal_init = False
+        self.X_cal    = None
+        self.y_cal    = None
+
+        super().__init__(A, epsilons, labels, smoothed)
+
+    def calibrate(self, X, y, append = True):
+        X, y = self.format(X, y)
+        if append:
+            self.X_cal, self.y_cal = self.append(
+                self.X_cal, self.y_cal, X, y, self.cal_init
+            )
+        else:
+            self.X_cal, self.y_cal = X, y
+
+        self.A.calibrate(self.X_cal, self.y_cal)
