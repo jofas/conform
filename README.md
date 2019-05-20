@@ -2,22 +2,24 @@
 
 ## TODO
 
-- MCP
+- MCP (labels -> mapper, epsilons -> [[]]) impl as class
 
 - Venn
 
 - Regression
 
-- experiments suite
-
 - alternative output (CP, ICP) (tuple w. confidence, random
     prediction for muls, emps)
+
+- ACP ?
+
+- nicer labels API
+
+- experiments suite
 
 - scores -> vectorized until the end
 
 - label map ?
-
-- ACP ?
 
 - decision_tree -> apply ... to predict_proba
 

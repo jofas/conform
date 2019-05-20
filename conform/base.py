@@ -10,9 +10,19 @@ class CPBase:
         self.labels   = labels
         self.smoothed = smoothed
 
-    def train(self, X, y):
+        self.init     = False
+        self.X        = None
+        self.y        = None
+
+    def train(self, X, y, append = True):
         X, y = self.format(X, y)
-        self.A.train(X, y)
+        if append:
+            self.X, self.y = self.append(
+                self.X, self.y, X, y, self.init
+            )
+            self.A.train(self.X, self.y)
+        else:
+            self.A.train(X, y)
 
     def predict(self, X):
         X = self.format(X)
@@ -56,6 +66,14 @@ class CPBase:
             return X, y
 
         return X
+
+    def append(self, X, y, X_, y_, init):
+        if not init:
+            return X_, y_
+        elif len(y.shape) > 1:
+            return np.vstack((X, X_)), np.vstack((y, y_))
+        else:
+            return np.vstack((X, X_)), np.append(y, y_)
 
     def __list_to_ndarray(self, z):
         return np.array(z) if type(z) is list else z

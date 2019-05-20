@@ -4,17 +4,11 @@ from .base import CPBaseNCS, ICPBaseNCS
 
 class __NCDecisionTreeBase:
     def __init__(self, **sklearn):
-        self.init = False
-        self.X    = None
-        self.y    = None
-
         self.clf = DTC(**sklearn)
-
         self.scores_ = []
 
     def train(self, X, y):
-        self.__append(X, y)
-        self.clf.fit(self.X, self.y)
+        self.clf.fit(X, y)
 
     def calibrate(self, X, y):
         nodes = self.clf.apply(X)
@@ -29,18 +23,6 @@ class __NCDecisionTreeBase:
         g = self.clf.tree_.n_node_samples[node]
         return [self.scores_ + [1 - val[l] / g] \
             for l in labels]
-
-    def __init_data(self, X, y):
-        self.X    = X
-        self.y    = y
-        self.init = True
-
-    def __append(self, X, y):
-        if not self.init:
-            self.__init_data(X, y)
-        else:
-            self.X = np.vstack((self.X, X))
-            self.y = np.vstack((self.y, y))
 
 class NCDecisionTreeCP(__NCDecisionTreeBase, CPBaseNCS):
     def __init__(self, **sklearn):

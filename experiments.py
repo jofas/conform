@@ -72,7 +72,6 @@ def compile_model(in_dim, out_dim):
     return model
 
 def neural_net():
-
     X, y = load_usps_random()
     y = np.array(
         [[0. if j != v else 1. for j in range(10)] \
@@ -92,13 +91,17 @@ def neural_net():
     X_test  = X[2*split:]
     y_test  = y[2*split:]
 
-    # icp
+    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+    labels = np.arange(10)
+
     model = compile_model(X.shape[1], y.shape[1])
 
     train = lambda X, y: model.fit(X, y, epochs=5, verbose=0)
     predict = lambda X: model.predict(X)
 
-    icp = ICP(NCNeuralNetICP(train, predict), [0.05], list(range(10)))
+    # icp
+    ncs = NCNeuralNetICP(train, predict)
+    icp = ICP(ncs, epsilons, labels)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
@@ -110,7 +113,8 @@ def neural_net():
 
     model = compile_model(X.shape[1], y.shape[1])
 
-    cp = CP(NCNeuralNetCP(train, predict), [0.05], list(range(10)))
+    ncs = NCNeuralNetCP(train, predict)
+    cp  = CP(ncs, epsilons, labels)
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
@@ -132,8 +136,12 @@ def descision_tree():
     X_test  = X[2*split:]
     y_test  = y[2*split:]
 
+    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+    labels = np.arange(10)
+
     # icp
-    icp = ICP(NCDecisionTreeICP(min_samples_leaf=50), [0.05], list(range(10)))
+    ncs = NCDecisionTreeICP(min_samples_leaf=50)
+    icp = ICP(ncs, epsilons, labels)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
@@ -143,15 +151,17 @@ def descision_tree():
     X_train = np.vstack((X_train, X_cal))
     y_train = np.append(y_train, y_cal)
 
-    cp = CP(NCDecisionTreeCP(min_samples_leaf=50), [0.05], list(range(10)))
+    ncs = NCDecisionTreeCP(min_samples_leaf=50)
+
+    cp = CP(ncs, epsilons, labels)
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
 
 def main():
-    usps_nc1nn()
-    #neural_net()
-    #descision_tree()
+    #usps_nc1nn()
+    neural_net()
+    descision_tree()
 
 if __name__ == '__main__':
     main()

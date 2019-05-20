@@ -4,10 +4,6 @@ from .base import CPBaseNCS, ICPBaseNCS
 
 class __NCNeuralNetBase:
     def __init__( self, train_, predict_, scorer, gamma):
-        self.init     = False
-        self.X        = None
-        self.y        = None
-
         self.train_   = train_
         self.predict_ = predict_
         self.scorer   = self.__scorer(scorer)
@@ -16,8 +12,7 @@ class __NCNeuralNetBase:
         self.scores_ = []
 
     def train(self, X, y):
-        self.__append(X, y)
-        self.train_(self.X, self.y)
+        self.train_(X, y)
 
     def calibrate(self, X, y):
         pred = self.predict_(X)
@@ -55,18 +50,6 @@ class __NCNeuralNetBase:
     def __get_max_neq(self, pred, label):
         return max([pred[i] for i in range(pred.shape[0]) \
             if i != label])
-
-    def __init_data(self, X, y):
-        self.X    = X
-        self.y    = y
-        self.init = True
-
-    def __append(self, X, y):
-        if not self.init:
-            self.__init_data(X, y)
-        else:
-            self.X = np.vstack((self.X, X))
-            self.y = np.vstack((self.y, y))
 
 class NCNeuralNetCP(__NCNeuralNetBase, CPBaseNCS):
     def __init__( self, train_, predict_, scorer = "max"
