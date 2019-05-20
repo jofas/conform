@@ -4,7 +4,34 @@ import random
 from .metrics import CPMetrics
 from .ncs.base import NCSBase
 
-def not_mcp(x, y): return 0
+class _DataObs:
+    def append(X, y, X_, y_):
+        if len(y.shape) > 1:
+            return np.vstack((X, X_)), np.vstack((y, y_))
+        else:
+            return np.vstack((X, X_)), np.append(y, y_)
+
+    def format(X, y = None):
+        X = _DataObs.__list_to_ndarray(X)
+        X = _DataObs.__reshape_if_vector(X)
+
+        if y is not None:
+            y = _DataObs.__list_to_ndarray(y)
+            y = _DataObs.__reshape_if_scalar(y)
+            return X, y
+
+        return X
+
+    def __list_to_ndarray(z):
+        return np.array(z) if type(z) is list else z
+
+    def __reshape_if_vector(X):
+        return X.reshape(1, X.shape[0]) \
+            if len(X.shape) == 1 else X
+
+    def __reshape_if_scalar(y):
+        return np.array([y]) if type(y) is not np.ndarray \
+            else y
 
 class __CPBase:
     def __init__( self, A, epsilons, labels, smoothed
@@ -27,10 +54,10 @@ class __CPBase:
         self.ks         = None
 
     def train(self, X, y, override = False):
-        X, y = self.format(X, y)
+        X, y = _DataObs.format(X, y)
 
         if not override and self.init_train:
-            self.X_train, self.y_train = self.append(
+            self.X_train, self.y_train = _DataObs.append(
                 self.X_train, self.y_train, X, y
             )
         else:
@@ -40,7 +67,7 @@ class __CPBase:
         self.A.train(self.X_train, self.y_train)
 
     def predict(self, X):
-        X = self.format(X)
+        X = _DataObs.format(X)
 
         res = []
         for x in X:
@@ -62,7 +89,7 @@ class __CPBase:
         return res
 
     def score(self, X, y):
-        X, y = self.format(X, y)
+        X, y = _DataObs.format(X, y)
 
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
@@ -99,37 +126,11 @@ class __CPBase:
         self.ks = [self.mondrian_taxonomy(x_,y_) \
             for (x_,y_) in zip(X,y)]
 
-    def append(self, X, y, X_, y_):
-        if len(y.shape) > 1:
-            return np.vstack((X, X_)), np.vstack((y, y_))
-        else:
-            return np.vstack((X, X_)), np.append(y, y_)
-
-    def format(self, X, y = None):
-        X = self.__list_to_ndarray(X)
-        X = self.__reshape_if_vector(X)
-
-        if y is not None:
-            y = self.__list_to_ndarray(y)
-            y = self.__reshape_if_scalar(y)
-            return X, y
-
-        return X
-
-    def __list_to_ndarray(self, z):
-        return np.array(z) if type(z) is list else z
-
-    def __reshape_if_vector(self, X):
-        return X.reshape(1, X.shape[0]) \
-            if len(X.shape) == 1 else X
-
-    def __reshape_if_scalar(self, y):
-        return np.array([y]) if type(y) is not np.ndarray \
-            else y
+def _not_mcp(x, y): return 0
 
 class CP(__CPBase):
     def __init__( self, A, epsilons, labels, smoothed=False
-                , mondrian_taxonomy=not_mcp ):
+                , mondrian_taxonomy=_not_mcp ):
         super().__init__( A, epsilons, labels, smoothed
                         , mondrian_taxonomy )
 
@@ -138,7 +139,7 @@ class CP(__CPBase):
         self.compute_nc_scores(self.X_train, self.y_train)
 
     def score_online(self, X, y):
-        X, y = self.format(X, y)
+        X, y = _DataObs.format(X, y)
 
         res = CPMetrics(self.epsilons)
 
@@ -151,7 +152,7 @@ class CP(__CPBase):
 
 class ICP(__CPBase):
     def __init__( self, A, epsilons, labels, smoothed=False
-                , mondrian_taxonomy=not_mcp ):
+                , mondrian_taxonomy=_not_mcp ):
         self.init_cal = False
         self.X_cal    = None
         self.y_cal    = None
@@ -160,10 +161,10 @@ class ICP(__CPBase):
                         , mondrian_taxonomy )
 
     def calibrate(self, X, y, override = False):
-        X, y = self.format(X, y)
+        X, y = _DataObs.format(X, y)
 
         if not override and self.init_cal:
-            self.X_cal, self.y_cal = self.append(
+            self.X_cal, self.y_cal = _DataObs.append(
                 self.X_cal, self.y_cal, X, y
             )
         else:
