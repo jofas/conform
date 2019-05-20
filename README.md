@@ -2,8 +2,6 @@
 
 ## TODO
 
-- MCP
-
 - Venn
 
 - Regression
@@ -12,6 +10,12 @@
     prediction for muls, emps)
 
 - ACP ?
+
+## Possible features/changes
+
+- for MCP: scores to dict (scores for each class)
+
+- for MCP: epsilons 2d ((!) METRICS (!))
 
 - nicer labels API (labels map?)
 
@@ -24,9 +28,6 @@
 - nc1nn -> ICP compatible
 
 - scores -> List to optimized search tree for queries
-
-- move more work from NCS to CPs -> 
-    CPs provide API to scores (may remove in v0.1.1)
 
 - CPBase -> rs + par
 

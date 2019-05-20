@@ -4,20 +4,20 @@ import random
 from .metrics import CPMetrics
 from .ncs.base import NCSBase
 
-def non_mcp_mapper(x, y): return 0
+def not_mcp(x, y): return 0
 
-class CPBase:
+class __CPBase:
     def __init__( self, A, epsilons, labels, smoothed
-                , map = non_mcp_mapper):
+                , mondrian_taxonomy ):
 
         if NCSBase not in type(A).__bases__:
             raise Exception("Non-conformity score invalid")
 
-        self.A          = A
-        self.epsilons   = epsilons
-        self.labels     = labels
-        self.smoothed   = smoothed
-        self.map        = map
+        self.A                 = A
+        self.epsilons          = epsilons
+        self.labels            = labels
+        self.smoothed          = smoothed
+        self.mondrian_taxonomy = mondrian_taxonomy
 
         self.init_train = False
         self.X_train    = None
@@ -49,7 +49,7 @@ class CPBase:
             score_per_label = self.A.score(x, self.labels)
 
             for (l,s) in zip(self.labels,score_per_label):
-                k = self.map(x, l)
+                k = self.mondrian_taxonomy(x, l)
                 p = self.__p_val_smoothed(s,k) \
                     if self.smoothed else self.__p_val(s,k)
 
@@ -67,8 +67,9 @@ class CPBase:
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
 
-        for (p_, y_) in zip(predicted, y):
-            res.update(p_, y_)
+        for (p_, x_, y_) in zip(predicted, X, y):
+            k = self.mondrian_taxonomy(x_, y_)
+            res.update(p_, y_, k)
 
         return res
 
@@ -77,24 +78,26 @@ class CPBase:
         self.__set_ks(X, y)
 
     def __p_val_smoothed(self, s, k):
-        eq, greater = self.__p_val_counter(s, k)
+        eq, greater, cc = self.__p_val_counter(s, k)
         return (greater + random.uniform(0.0, 1.0) * eq) \
-             / (len(self.nc_scores) + 1)
+             / cc
 
     def __p_val(self, s, k):
-        eq, greater = self.__p_val_counter(s, k)
-        return (eq + greater) / (len(self.nc_scores) + 1)
+        eq, greater, cc = self.__p_val_counter(s, k)
+        return (eq + greater) / cc
 
     def __p_val_counter(self, s, k):
-        eq = 0; greater = 0;
+        eq = 0; greater = 0; class_count = 0
         for (k_, s_) in zip(self.ks, self.nc_scores):
             if k_ == k:
+                class_count += 1
                 if s_ == s: eq += 1
                 if s_ >  s: greater += 1
-        return eq + 1, greater
+        return eq + 1, greater, class_count + 1
 
     def __set_ks(self, X, y):
-        self.ks = [self.map(x_,y_) for (x_,y_) in zip(X,y)]
+        self.ks = [self.mondrian_taxonomy(x_,y_) \
+            for (x_,y_) in zip(X,y)]
 
     def append(self, X, y, X_, y_):
         if len(y.shape) > 1:
@@ -124,10 +127,11 @@ class CPBase:
         return np.array([y]) if type(y) is not np.ndarray \
             else y
 
-class CP(CPBase):
-    def __init__( self, A, epsilons, labels
-                , smoothed = False ):
-        super().__init__(A, epsilons, labels, smoothed)
+class CP(__CPBase):
+    def __init__( self, A, epsilons, labels, smoothed=False
+                , mondrian_taxonomy=not_mcp ):
+        super().__init__( A, epsilons, labels, smoothed
+                        , mondrian_taxonomy )
 
     def train(self, X, y, override = False):
         super().train(X, y)
@@ -145,14 +149,15 @@ class CP(CPBase):
 
         return res
 
-class ICP(CPBase):
-    def __init__( self, A, epsilons, labels
-                , smoothed = False ):
+class ICP(__CPBase):
+    def __init__( self, A, epsilons, labels, smoothed=False
+                , mondrian_taxonomy=not_mcp ):
         self.init_cal = False
         self.X_cal    = None
         self.y_cal    = None
 
-        super().__init__(A, epsilons, labels, smoothed)
+        super().__init__( A, epsilons, labels, smoothed
+                        , mondrian_taxonomy )
 
     def calibrate(self, X, y, override = False):
         X, y = self.format(X, y)

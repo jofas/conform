@@ -2,40 +2,70 @@ import numpy as np
 
 class CPMetrics:
     def __init__(self, epsilons):
-        self.eps = {e: EpsilonMetrics() for e in epsilons}
+        self.epsilons = epsilons
+        self.classes  = {}
+        self.sum      = _ClassMetrics(self.epsilons)
+
+    def update(self, predicted, y, k):
+        if k not in self.classes:
+            self.classes[k] = _ClassMetrics(self.epsilons)
+        self.classes[k].update(predicted, y)
+        self.sum.update(predicted, y)
+
+    def __repr__(self):
+        res = ""
+        if len(self.classes) > 1:
+            for k in sorted(self.classes.keys()):
+                res += "{}  {}".format(
+                    "class", self.classes[k].__repr__(7, k)
+                )
+            res += "{}  {}".format(
+                "class", self.sum.__repr__(7, "sum")
+            )
+        else:
+            for k in self.classes:
+                res += repr(self.classes[k])
+        return res
+
+class _ClassMetrics:
+    def __init__(self, epsilons):
+        self.eps = {e: _EpsilonMetrics() for e in epsilons}
 
     def update(self, predicted, y):
         for e in self.eps:
             self.eps[e].update(predicted[e], y)
 
-    def __iadd__(self, other):
-        for e in self.eps:
-            self.eps[e] += other.eps[e]
+    def __repr__(self, offset = 0, k = None):
+        fill_offset = lambda x: offset * x
 
-        return self
-
-    def __repr__(self):
-        res = "epsilon  status   {}   {}  {}  {}\n".format(
-            "err ges   err mul   err sin",
+        res = "epsilon  status   {}   {}  {}  {}".format(
+            "err sum   err mul   err sin",
             "%mul      %sin      %emp",
             "         n      mul      sin      emp",
-            "err mul  err sin"
+            "err mul  err sin\n"
         )
 
+        res += "{}{}\n".format(fill_offset("-"), 129 * "-")
+
         for e in self.eps:
+            if k != None:
+                res += "{:>5}  ".format(k)
+
             res += "{:7}  {}  {}\n".format(
                 e, self.eps[e].accuracy(e), self.eps[e]
-        )
+            )
+
+        res += "{}{}\n".format(fill_offset("-"), 129 * "-")
 
         return res
 
-class EpsilonMetrics:
+class _EpsilonMetrics:
     def __init__(self):
         self.n   = 0
         self.mul = 0
         self.sin = 0
         self.emp = 0
-        self.err = Err()
+        self.err = _Err()
 
     def update(self, predicted, y):
         self.n += 1
@@ -54,17 +84,7 @@ class EpsilonMetrics:
             self.emp += 1; self.err.emp += 1
 
     def accuracy(self, eps):
-        return EpsilonAccuracy(self, eps)
-
-    def __iadd__(self, other):
-        for k in self.__dict__:
-            if k == 'err':
-                for kk in self.err:
-                    self.err[kk] += other.err[kk]
-            else:
-                self.__dict__[k] += other.__dict__[k]
-
-        return self
+        return _EpsilonAccuracy(self, eps)
 
     def __repr__(self):
         return "{:7d}  {:7d}  {:7d}  {:7d}  {:7d}  {:7d}" \
@@ -78,13 +98,13 @@ class EpsilonMetrics:
             return np.argmax(y)
         return y
 
-class EpsilonAccuracy:
+class _EpsilonAccuracy:
     def __init__(self, em, eps):
         self.prc_mul = em.mul / em.n
         self.prc_sin = em.sin / em.n
         self.prc_emp = em.emp / em.n
 
-        self.err_ges = em.err.ges() / em.n
+        self.err_sum = em.err.sum() / em.n
 
         self.err_mul = \
             em.err.mul / em.mul if em.mul > 0 else 0.0
@@ -92,7 +112,7 @@ class EpsilonAccuracy:
         self.err_sin = \
             em.err.sin / em.sin if em.sin > 0 else 0.0
 
-        if round(self.err_ges, 5) <= eps:
+        if round(self.err_sum, 5) <= eps:
             self.status = "OK"
         else:
             self.status = "FAILED"
@@ -101,17 +121,17 @@ class EpsilonAccuracy:
         return "{:>6}  {}  {}".format(
             self.status,
             "{:> .5f}  {:> .5f}  {:> .5f}".format(
-                self.err_ges, self.err_mul, self.err_sin
+                self.err_sum, self.err_mul, self.err_sin
             ),
             "{:> .5f}  {:> .5f}  {:> .5f}".format(
                 self.prc_mul, self.prc_sin, self.prc_emp
             ))
 
-class Err:
+class _Err:
     def __init__(self):
         self.emp = 0
         self.mul = 0
         self.sin = 0
 
-    def ges(self):
+    def sum(self):
         return self.emp + self.mul + self.sin

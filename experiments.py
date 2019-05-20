@@ -34,20 +34,6 @@ def load_usps_random():
 
     return X, y
 
-def usps_nc1nn():
-    X, y = load_usps_random()
-    epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
-
-    cp = CP(NC1NN(), epsilons, np.arange(10))
-    res = cp.score_online(X, y)
-    print("normal")
-    print(res)
-
-    cp = CP(NC1NN(), epsilons, np.arange(10), True)
-    res = cp.score_online(X, y)
-    print("smoothed")
-    print(res)
-
 def compile_model(in_dim, out_dim):
     from keras.models import Sequential
     from keras.layers import Dense
@@ -68,6 +54,22 @@ def compile_model(in_dim, out_dim):
     )
 
     return model
+
+def mondrian_each_label_nn(x, y): return np.argmax(y)
+
+def usps_nc1nn():
+    X, y = load_usps_random()
+    epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
+
+    cp = CP(NC1NN(), epsilons, np.arange(10))
+    res = cp.score_online(X, y)
+    print("normal")
+    print(res)
+
+    cp = CP(NC1NN(), epsilons, np.arange(10), True)
+    res = cp.score_online(X, y)
+    print("smoothed")
+    print(res)
 
 def neural_net():
     X, y = load_usps_random()
@@ -98,12 +100,37 @@ def neural_net():
     predict = lambda X: model.predict(X)
     ncs = NCSNeuralNet(train, predict)
 
+    '''
+    # icp mondrian
+    icp = ICP( ncs, epsilons, labels
+             , mondrian_taxonomy = mondrian_each_label_nn )
+    icp.train(X_train, y_train)
+    icp.calibrate(X_cal, y_cal)
+    res = icp.score(X_test, y_test)
+    print(res)
+    '''
+
     # icp
+    model = compile_model(X.shape[1], y.shape[1])
     icp = ICP(ncs, epsilons, labels)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
     print(res)
+
+    '''
+    # cp offline mondrian
+    X_train = np.vstack((X_train, X_cal))
+    y_train = np.vstack((y_train, y_cal))
+
+    model = compile_model(X.shape[1], y.shape[1])
+
+    cp  = CP( ncs, epsilons, labels
+            , mondrian_taxonomy = mondrian_each_label_nn )
+    cp.train(X_train, y_train)
+    res = cp.score(X_test, y_test)
+    print(res)
+    '''
 
     # cp offline
     X_train = np.vstack((X_train, X_cal))
@@ -158,7 +185,7 @@ def descision_tree():
 def main():
     #usps_nc1nn()
     neural_net()
-    descision_tree()
+    #descision_tree()
 
 if __name__ == '__main__':
     main()
