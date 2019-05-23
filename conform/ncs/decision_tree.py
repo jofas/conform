@@ -9,7 +9,7 @@ class NCSDecisionTree(NCSBase):
     def train(self, X, y):
         self.clf.fit(X, y)
 
-    def scores(self, X, y):
+    def scores(self, X, y, _cp):
         nodes = self.clf.apply(X)
         res = []
         for (n_, y_) in zip(nodes, y):

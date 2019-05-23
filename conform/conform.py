@@ -3,35 +3,7 @@ import random
 
 from .metrics import CPMetrics
 from .ncs.base import NCSBase
-
-class _DataObs:
-    def append(X, y, X_, y_):
-        if len(y.shape) > 1:
-            return np.vstack((X, X_)), np.vstack((y, y_))
-        else:
-            return np.vstack((X, X_)), np.append(y, y_)
-
-    def format(X, y = None):
-        X = _DataObs.__list_to_ndarray(X)
-        X = _DataObs.__reshape_if_vector(X)
-
-        if y is not None:
-            y = _DataObs.__list_to_ndarray(y)
-            y = _DataObs.__reshape_if_scalar(y)
-            return X, y
-
-        return X
-
-    def __list_to_ndarray(z):
-        return np.array(z) if type(z) is list else z
-
-    def __reshape_if_vector(X):
-        return X.reshape(1, X.shape[0]) \
-            if len(X.shape) == 1 else X
-
-    def __reshape_if_scalar(y):
-        return np.array([y]) if type(y) is not np.ndarray \
-            else y
+from . import _data_obs as _do
 
 class __CPBase:
     def __init__( self, A, epsilons, labels, smoothed
@@ -50,14 +22,14 @@ class __CPBase:
         self.X_train    = None
         self.y_train    = None
 
-        self.nc_scores  = None
-        self.ks         = None
+        self.nc_scores  = []
+        self.ks         = []
 
     def train(self, X, y, override = False):
-        X, y = _DataObs.format(X, y)
+        X, y = _do.format(X, y)
 
         if not override and self.init_train:
-            self.X_train, self.y_train = _DataObs.append(
+            self.X_train, self.y_train = _do.append(
                 self.X_train, self.y_train, X, y
             )
         else:
@@ -66,8 +38,13 @@ class __CPBase:
 
         self.A.train(self.X_train, self.y_train)
 
+    def set_nc_scores(self, X, y, cp):
+        self.nc_scores = self.A.scores(X, y, cp)
+        self.ks        = [self.mondrian_taxonomy(x_,y_) \
+            for (x_,y_) in zip(X,y)]
+
     def predict(self, X):
-        X = _DataObs.format(X)
+        X = _do.format(X)
 
         res = []
         for x in X:
@@ -89,7 +66,7 @@ class __CPBase:
         return res
 
     def score(self, X, y):
-        X, y = _DataObs.format(X, y)
+        X, y = _do.format(X, y)
 
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
@@ -99,10 +76,6 @@ class __CPBase:
             res.update(p_, y_, k)
 
         return res
-
-    def compute_nc_scores(self, X, y):
-        self.nc_scores = self.A.scores(X, y)
-        self.__set_ks(X, y)
 
     def __p_val_smoothed(self, s, k):
         eq, greater, cc = self.__p_val_counter(s, k)
@@ -122,10 +95,6 @@ class __CPBase:
                 if s_ >  s: greater += 1
         return eq + 1, greater, class_count + 1
 
-    def __set_ks(self, X, y):
-        self.ks = [self.mondrian_taxonomy(x_,y_) \
-            for (x_,y_) in zip(X,y)]
-
 def _not_mcp(x, y): return 0
 
 class CP(__CPBase):
@@ -135,18 +104,23 @@ class CP(__CPBase):
                         , mondrian_taxonomy )
 
     def train(self, X, y, override = False):
-        super().train(X, y)
-        self.compute_nc_scores(self.X_train, self.y_train)
+        super().train(X, y, override)
+        self.set_nc_scores( self.X_train, self.y_train
+                          , cp = True )
 
     def score_online(self, X, y):
-        X, y = _DataObs.format(X, y)
+        X, y = _do.format(X, y)
 
         res = CPMetrics(self.epsilons)
 
+        count = 0
         for (x_, y_) in zip(X, y):
-            predicted = self.predict(x)[0]
-            res.update(predicted, y_)
-            self.train(x_, y_)
+            count += 1
+            if count % 500 == 0: print(str(count) + "\r")
+            k = self.mondrian_taxonomy(x_, y_)
+            p = self.predict(x_)[0]
+            res.update(p, y_, k)
+            self.train(x_.reshape(1,-1), y_)
 
         return res
 
@@ -161,14 +135,15 @@ class ICP(__CPBase):
                         , mondrian_taxonomy )
 
     def calibrate(self, X, y, override = False):
-        X, y = _DataObs.format(X, y)
+        X, y = _do.format(X, y)
 
         if not override and self.init_cal:
-            self.X_cal, self.y_cal = _DataObs.append(
+            self.X_cal, self.y_cal = _do.append(
                 self.X_cal, self.y_cal, X, y
             )
         else:
             self.X_cal, self.y_cal = X, y
             self.init_cal          = True
 
-        self.compute_nc_scores(self.X_cal, self.y_cal)
+        self.set_nc_scores( self.X_cal, self.y_cal
+                          , cp = False )

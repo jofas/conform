@@ -2,7 +2,7 @@ import numpy as np
 
 from sklearn.datasets import load_iris
 
-from . import NC1NN, NC1NN_py, CP
+from . import NC1NN, NC1NN_py, CP, NCSKNearestNeighbors
 from .helpers import vec_cmp
 
 # Sample from IRIS data set. The same sample is used in
@@ -34,8 +34,12 @@ def test_score_from_tutorial():
     nn.train(X, y)
     s2 = nn.score(x_, [0,1])
 
+    nn = NCSKNearestNeighbors([0,1], n_neighbors=1)
+    nn.train(X, y)
+    s3 = nn.score(x_.reshape(1,-1), [0,1])
+
     for i in range(2):
-        assert s1[i] == s2[i]
+        assert s1[i] == s2[i] == s3[i]
 
 def test_nc_from_tutorial():
     X  = np.array(IRIS_SUBSET_X[:24])
@@ -46,15 +50,20 @@ def test_nc_from_tutorial():
 
     res = [{0.05: [0,1], 0.08: [1], 0.33:[]}]
 
-    cp = CP(NC1NN(), epsilons, np.array([0,1]))
+    cp = CP(NC1NN(), epsilons, [0,1])
     cp.train(X, y)
     res1 = cp.predict(x_)
 
-    cp = CP(NC1NN_py(), epsilons, np.array([0,1]))
+    cp = CP(NC1NN_py(), epsilons, [0,1])
     cp.train(X, y)
     res2 = cp.predict(x_)
 
-    assert res == res1 == res2
+    nn = NCSKNearestNeighbors([0,1], n_neighbors=1)
+    cp = CP(nn, epsilons, [0,1])
+    cp.train(X, y)
+    res3 = cp.predict(x_)
+
+    assert res == res1 == res2 == res3
 
 def test_scores_from_random_iris_samples():
     iris = load_iris()

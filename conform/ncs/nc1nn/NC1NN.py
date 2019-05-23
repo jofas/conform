@@ -30,7 +30,7 @@ class NC1NN(NCSBase):
             nc1nn.train_par( X, y, self.X, self.y
                             , self.dists, self.scores_ )
 
-    def scores(self, X, y):
+    def scores(self, X, y, _cp = False):
         return self.scores_
 
     def score(self, x, labels):
@@ -86,7 +86,7 @@ class NC1NN_py(NCSBase):
         for i in range(X.shape[0]):
             self.__train(X[i], y[i])
 
-    def scores(self, X, y):
+    def scores(self, X, y, _cp):
         return self.scores_
 
     def score(self, x_, labels):

@@ -1,5 +1,6 @@
 from conform import CP, ICP
-from conform.ncs import NC1NN,NCSNeuralNet,NCSDecisionTree
+from conform.ncs import NC1NN, NCSNeuralNet, \
+    NCSDecisionTree, NCSKNearestNeighbors
 
 import h5py
 import numpy as np
@@ -58,17 +59,68 @@ def compile_model(in_dim, out_dim):
 def mondrian_each_label_nn(x, y): return np.argmax(y)
 
 def usps_nc1nn():
+    from time import time
     X, y = load_usps_random()
     epsilons = [0.01, 0.02, 0.03, 0.04, 0.05]
 
+    start = time()
     cp = CP(NC1NN(), epsilons, np.arange(10))
     res = cp.score_online(X, y)
     print("normal")
+    print("time: " + str(time() - start))
+    print(res)
+
+    start = time()
+    nn = NCSKNearestNeighbors(np.arange(10), n_neighbors=1)
+    cp = CP(nn, epsilons, np.arange(10))
+    res = cp.score_online(X, y)
+    print("new")
+    print("time: " + str(time() - start))
     print(res)
 
     cp = CP(NC1NN(), epsilons, np.arange(10), True)
     res = cp.score_online(X, y)
     print("smoothed")
+    print(res)
+
+def knn():
+    X, y = load_usps_random()
+
+    X_cal = X[:200]
+    y_cal = y[:200]
+
+    X     = X[200:]
+    y     = y[200:]
+
+    split = int(X.shape[0] / 3)
+
+    X_train = X[:2*split]
+    y_train = y[:2*split]
+
+    X_test  = X[2*split:]
+    y_test  = y[2*split:]
+
+    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+    labels = np.arange(10)
+
+    # icp
+    ncs = NCSKNearestNeighbors(labels, n_neighbors=1)
+
+    icp = ICP(ncs, epsilons, labels)
+    icp.train(X_train, y_train)
+    icp.calibrate(X_cal, y_cal)
+    res = icp.score(X_test, y_test)
+    print(res)
+
+    # cp offline
+    X_train = np.vstack((X_train, X_cal))
+    y_train = np.append(y_train, y_cal)
+
+    ncs = NCSKNearestNeighbors(labels, n_neighbors=1)
+
+    cp = CP(ncs, epsilons, labels)
+    cp.train(X_train, y_train)
+    res = cp.score(X_test, y_test)
     print(res)
 
 def neural_net():
@@ -165,6 +217,7 @@ def descision_tree():
 
     # icp
     ncs = NCSDecisionTree(min_samples_leaf=50)
+
     icp = ICP(ncs, epsilons, labels)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
@@ -184,6 +237,7 @@ def descision_tree():
 
 def main():
     #usps_nc1nn()
+    #knn()
     neural_net()
     #descision_tree()
 

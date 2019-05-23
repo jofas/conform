@@ -13,7 +13,7 @@ class NCSNeuralNet(NCSBase):
     def train(self, X, y):
         self.train_(X, y)
 
-    def scores(self, X, y):
+    def scores(self, X, y, _cp):
         pred = self.predict_(X)
         return [self.scorer(p_, np.argmax(y_)) \
             for (p_, y_) in zip(pred, y)]

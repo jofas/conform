@@ -21,7 +21,9 @@
 
 - experiments suite
 
-- scores -> vectorized until the end
+- ncs.classifier.score -> vectorized until the end
+
+- score_online with override too and with interval
 
 - decision_tree -> apply ... to predict_proba
 
