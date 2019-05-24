@@ -284,6 +284,8 @@ def regression():
         else:
             return yi - xi * e + f
 
+    # RRCM (before just least squares)
+
     cn = round(c(X[-1]),3)
     dn = round(d(X[-1]),3)
     if cn < 0: cn = -cn; dn = -dn
@@ -330,30 +332,15 @@ def regression():
 
     e = 0.08
 
-    l = []
-
+    ix, iy = None, None
     for j in range(1, m):
         if N[j] / n > e:
-            l.append(P[j])
-            l.append(P[j+1])
+            if ix == None: ix = P[j]
+            if iy == None or iy == P[j]: iy = P[j+1]
         elif M[j] / n > e:
-            l.append(P[j])
+            iy = P[j]
 
-    #print(sorted(set(l)))
-    print(P)
-
-    '''
-    clf = LinearRegression(fit_intercept=False)
-    #clf = LinearRegression()
-    clf.fit(X, y)
-    print(clf.coef_)
-    print(clf.intercept_)
-    X = X.reshape(-1,)
-    m =   (len(X) * np.sum(X*y) - np.sum(X) * np.sum(y)) \
-        / (len(X) * np.sum(X*X) - np.sum(X) ** 2)
-    b = (np.sum(y) - m * np.sum(X)) / len(X)
-    print(b, m)
-    '''
+    print(ix, iy)
 
 def main():
     regression()
