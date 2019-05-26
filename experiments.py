@@ -284,6 +284,8 @@ def regression():
         else:
             return yi - xi * e + f
 
+    # RRCM "kernel method" passes C, D to RRCM
+
     # RRCM (before just least squares)
 
     cn = round(c(X[-1]),3)
@@ -292,6 +294,7 @@ def regression():
 
     bound0 = lambda ci, di: -(di - dn) / (ci - cn)
     bound1 = lambda ci, di: -(di + dn) / (ci + cn)
+    bound2 = lambda ci, di: -(di + dn) / 2 * ci
 
     from infinity import inf
 
@@ -313,7 +316,8 @@ def regression():
             P.append(b0)
             P.append(b1)
         elif ci == cn and cn != 0 and di != dn:
-            P.append(-(di + dn) / 2 * ci)
+            b2 = round(bound2(ci, di),2)
+            P.append(b2)
 
     P = sorted(P)
     P = [-inf] + P + [inf]
@@ -332,15 +336,28 @@ def regression():
 
     e = 0.08
 
-    ix, iy = None, None
+    intervals = []
     for j in range(1, m):
         if N[j] / n > e:
-            if ix == None: ix = P[j]
-            if iy == None or iy == P[j]: iy = P[j+1]
+            intervals.append([P[j], P[j+1]])
         elif M[j] / n > e:
-            iy = P[j]
+            intervals.append([P[j], P[j]])
 
-    print(ix, iy)
+    i = 0; j = 1; idx_reduced = []
+    while j < len(intervals):
+        if intervals[i][1] == intervals[j][0]:
+            intervals[i][1] = intervals[j][1]
+        else:
+            idx_reduced.append(i)
+            i = j
+        j += 1
+
+    # Flag for convex hull of intervals
+    if len(idx_reduced) > 0:
+        reduced = [intervals[i] for i in idx_reduced]
+    else:
+        reduced = [intervals[0]]
+    print(reduced)
 
 def main():
     regression()
