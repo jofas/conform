@@ -6,24 +6,6 @@ from sklearn.neighbors import NearestNeighbors as NN
 
 from .base import NCSBase, NCSBaseRegressor
 
-class _LabelNN:
-    def __init__(self, n, label, **sklearn):
-        self.label = label
-        self.clf   = NN(**sklearn)
-        self.n_set = n
-        self.n_cur = 0
-
-    def train(self, X):
-        if X.shape[0] < self.n_set: self.n_cur = X.shape[0]
-        else: self.n_cur = self.n_set
-        if self.n_cur > 0: self.clf.fit(X)
-
-    def nn(self, x):
-        if self.n_cur > 0:
-            return self.clf.kneighbors(x, self.n_cur)[0][0]
-        else:
-            return np.array([inf], dtype=np.float64)
-
 class NCSKNearestNeighbors(NCSBase):
     def __init__(self, labels, **sklearn):
         self.n =  5 if "n_neighbors" not in sklearn \
@@ -75,6 +57,24 @@ class NCSKNearestNeighbors(NCSBase):
         return 0.0          if d_eq == d_neq else \
                d_eq / d_neq if d_neq > 0.0   else \
                inf
+
+class _LabelNN:
+    def __init__(self, n, label, **sklearn):
+        self.label = label
+        self.clf   = NN(**sklearn)
+        self.n_set = n
+        self.n_cur = 0
+
+    def train(self, X):
+        if X.shape[0] < self.n_set: self.n_cur = X.shape[0]
+        else: self.n_cur = self.n_set
+        if self.n_cur > 0: self.clf.fit(X)
+
+    def nn(self, x):
+        if self.n_cur > 0:
+            return self.clf.kneighbors(x, self.n_cur)[0][0]
+        else:
+            return np.array([inf], dtype=np.float64)
 
 class NCSKNearestNeighborsRegressor(NCSBaseRegressor):
     def __init__(self, **sklearn):

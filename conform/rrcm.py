@@ -23,41 +23,6 @@ ZERO_VALS = [R, EMPTY]
 ONE_VAL   = [RAY_NEG, RAY, POINT]
 TWO_VALS  = [INTERVAL, RAY_UNION]
 
-class _S:
-    def __init__(self, type, ui = None, vi = None):
-        self.type = type
-        self.ui     = ui
-        self.vi     = vi
-        self.ui_idx = None
-        self.vi_idx = None
-
-    def map_idx(self, idx, val):
-        if self.type in TWO_VALS:
-            if val == self.ui:
-                self.ui_idx = idx
-            else:
-                self.vi_idx = idx
-        else:
-            self.ui_idx = idx
-
-    def __repr__(self):
-        if self.type == INTERVAL:
-            return "[{}, {}]".format(self.ui, self.vi)
-        if self.type == RAY_UNION:
-            return "(-inf, {}] & [{}, inf)".format(
-                self.ui, self.vi
-            )
-        if self.type == RAY_NEG:
-            return "(-inf, {}]".format(self.ui)
-        if self.type == RAY:
-            return "[{}, inf)".format(self.ui)
-        if self.type == POINT:
-            return "[{}]".format(self.ui)
-        if self.type == R:
-            return "R"
-        else:
-            return "EMTPY"
-
 class RRCM:
     def __init__(self, A, epsilons, convex_hull = True):
 
@@ -280,3 +245,39 @@ class RRCM:
                     [intervals[i] for i in idx_reduced]
 
         return res
+
+class _S:
+    def __init__(self, type, ui = None, vi = None):
+        self.type = type
+        self.ui     = ui
+        self.vi     = vi
+        self.ui_idx = None
+        self.vi_idx = None
+
+    def map_idx(self, idx, val):
+        if self.type in TWO_VALS:
+            if val == self.ui:
+                self.ui_idx = idx
+            else:
+                self.vi_idx = idx
+        else:
+            self.ui_idx = idx
+
+    def __repr__(self):
+        if self.type == INTERVAL:
+            return "[{}, {}]".format(self.ui, self.vi)
+        if self.type == RAY_UNION:
+            return "(-inf, {}] & [{}, inf)".format(
+                self.ui, self.vi
+            )
+        if self.type == RAY_NEG:
+            return "(-inf, {}]".format(self.ui)
+        if self.type == RAY:
+            return "[{}, inf)".format(self.ui)
+        if self.type == POINT:
+            return "[{}]".format(self.ui)
+        if self.type == R:
+            return "R"
+        else:
+            return "EMTPY"
+
