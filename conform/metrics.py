@@ -83,8 +83,8 @@ class _EpsilonMetrics:
         if len(predicted) == 0:
             self.emp += 1; self.err.emp += 1
 
-    def accuracy(self, eps):
-        return _EpsilonAccuracy(self, eps)
+    def accuracy(self, e):
+        return _EpsilonAccuracy(self, e)
 
     def __repr__(self):
         return "{:7d}  {:7d}  {:7d}  {:7d}  {:7d}  {:7d}" \
@@ -99,7 +99,7 @@ class _EpsilonMetrics:
         return y
 
 class _EpsilonAccuracy:
-    def __init__(self, em, eps):
+    def __init__(self, em, e):
         self.prc_mul = em.mul / em.n
         self.prc_sin = em.sin / em.n
         self.prc_emp = em.emp / em.n
@@ -112,7 +112,7 @@ class _EpsilonAccuracy:
         self.err_sin = \
             em.err.sin / em.sin if em.sin > 0 else 0.0
 
-        if round(self.err_sum, 5) <= eps:
+        if round(self.err_sum, 5) <= e:
             self.status = "OK"
         else:
             self.status = "FAILED"
@@ -135,3 +135,32 @@ class _Err:
 
     def sum(self):
         return self.emp + self.mul + self.sin
+
+class RRCMMetrics:
+    def __init__(self, epsilons):
+        self.eps = {e:_IntervalMetrics() for e in epsilons}
+
+    def update(self, predicted, y):
+        for e in predicted:
+            self.eps[e].update(predicted[e], y)
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+class _IntervalMetrics():
+    def __init__(self):
+        self.n = 0
+        self.ok = 0
+
+    def update(self, predicted, y):
+        self.n += 1
+        for interval in predicted:
+            if interval[0] <= y and y <= interval[1]:
+                self.ok += 1
+                break
+
+    def accuracy(self, e):
+        pass
+
+    def __repr__(self):
+        return str(self.__dict__)

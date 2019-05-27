@@ -2,18 +2,24 @@
 
 ## TODO
 
-- Venn
+- RRCMMetrics beautiful + testing (Boston Housing)
 
-- Regression
+- Venn
 
 - alternative output (CP, ICP) (tuple w. confidence, random
     prediction for muls, emps)
+
+- Meta
 
 - ACP ?
 
 ## Possible features/changes
 
-- for MCP: scores to dict (scores for each class)
+- IRRCM
+
+- alternative output for RRCM (interval width)
+
+- NCSBase -> NCSBaseClassifier
 
 - for MCP: epsilons 2d ((!) METRICS (!))
 
@@ -27,10 +33,8 @@
 
 - decision_tree -> apply ... to predict_proba
 
-- nc1nn -> ICP compatible
-
 - scores -> List to optimized search tree for queries
 
 - CPBase -> rs + par
 
-- v0.1.1 -> rm NC1NN_py, NC1NN_old, nc1nn_rs -> ensemble,
+- v0.1.1 -> rm nc1nn

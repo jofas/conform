@@ -1,9 +1,10 @@
 import numpy as np
 
+from statistics import mean
 from infinity import inf
 from sklearn.neighbors import NearestNeighbors as NN
 
-from .base import NCSBase
+from .base import NCSBase, NCSBaseRegressor
 
 class _LabelNN:
     def __init__(self, n, label, **sklearn):
@@ -74,3 +75,42 @@ class NCSKNearestNeighbors(NCSBase):
         return 0.0          if d_eq == d_neq else \
                d_eq / d_neq if d_neq > 0.0   else \
                inf
+
+class NCSKNearestNeighborsRegressor(NCSBaseRegressor):
+    def __init__(self, **sklearn):
+        self.nn = NN(**sklearn)
+        self.y  = None
+
+    def train(self, X, y):
+        self.nn.fit(X, y)
+        self.y = y
+
+    def coeffs(self, X, y, cp):
+        C = [0.0 for _ in X]
+        D = []
+
+        n = self.__n()
+        if cp: nns = self.nn.kneighbors(n_neighbors = n)
+        else:  nns = self.nn.kneighbors(X, n_neighbors = n)
+
+        for i, ns in enumerate(nns[1]):
+            ys = [y[idx] for idx in ns]
+            D.append(y[i] - mean(ys))
+
+        return C, D
+
+    def coeffs_n(self, x):
+        nns = self.nn.kneighbors(
+            x.reshape(1, -1), n_neighbors = self.__n()
+        )[1][0]
+        ys = [self.y[idx] for idx in nns]
+
+        cn = 1.0
+        dn = -mean(ys)
+
+        return cn, dn
+
+    def __n(self):
+        return len(self.y) \
+            if len(self.y) < self.nn.n_neighbors else \
+                self.nn.n_neighbors

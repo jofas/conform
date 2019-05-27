@@ -1,4 +1,4 @@
-from conform import CP, ICP
+from conform import CP, ICP, RRCM
 from conform.ncs import NC1NN, NCSNeuralNet, \
     NCSDecisionTree, NCSKNearestNeighbors
 
@@ -236,128 +236,24 @@ def descision_tree():
     print(res)
 
 def regression():
-    from sklearn.linear_model import LinearRegression
-    from statistics import mean
+    from conform.ncs import NCSKNearestNeighborsRegressor
 
     X = np.array([[5.0],[4.4],[4.9],[4.4],[5.1]
-                ,[5.9],[5.0],[6.4],[6.7],[6.2]
-                ,[5.1],[4.6],[5.0],[5.4],[5.0]
-                ,[6.7],[5.8],[5.5],[5.8],[5.4]
-                ,[5.1],[5.7],[4.6],[4.6],[6.8]])
+                 ,[5.9],[5.0],[6.4],[6.7],[6.2]
+                 ,[5.1],[4.6],[5.0],[5.4],[5.0]
+                 ,[6.7],[5.8],[5.5],[5.8],[5.4]
+                 ,[5.1],[5.7],[4.6],[4.6],[6.8]])
     y = [ 0.3 , 0.2 , 0.2 , 0.2 , 0.4
         , 1.5 , 0.2 , 1.3 , 1.4 , 1.5
         , 0.2 , 0.2 , 0.6 , 0.4 , 1.0
         , 1.7 , 1.2 , 0.2 , 1.0 , 0.4
         , 0.3 , 1.3 , 0.3 , 0.2 ]
 
-    X = X.reshape(-1,)
-
-    n = X.shape[0]
-    m = mean(X)
-    s = sum(y)
-    t = sum([(X[i] - m) * y[i] for i in range(n - 1)])
-    w = X[n - 1] - m
-    u = sum([(X[i] - m) ** 2 for i in range(n)])
-    v = sum(X)
-    z = v / n
-
-    a = - 1 / n + z * w / u
-    b = - w / u
-
-    e = t / u
-    f = z * t / u - s / n
-
-    a = round(a,3)
-    b = round(b,3)
-    e = round(e,3)
-    f = round(f,3)
-
-    def c(xi, yi = None):
-        if yi == None:
-            return 1 + a + xi * b
-        else:
-            return a + xi * b
-
-    def d(xi, yi = None):
-        if yi == None:
-            return - xi * e + f
-        else:
-            return yi - xi * e + f
-
-    # RRCM "kernel method" passes C, D to RRCM
-
-    # RRCM (before just least squares)
-
-    cn = round(c(X[-1]),3)
-    dn = round(d(X[-1]),3)
-    if cn < 0: cn = -cn; dn = -dn
-
-    bound0 = lambda ci, di: -(di - dn) / (ci - cn)
-    bound1 = lambda ci, di: -(di + dn) / (ci + cn)
-    bound2 = lambda ci, di: -(di + dn) / 2 * ci
-
-    from infinity import inf
-
-    C = []
-    D = []
-    P = []
-
-    for (x_, y_) in zip(X, y):
-        ci = round(c(x_, y_),3)
-        di = round(d(x_, y_),3)
-        if ci < 0: ci = -ci; di = -di;
-
-        C.append(ci)
-        D.append(di)
-
-        if ci != cn:
-            b0 = round(bound0(ci, di),2)
-            b1 = round(bound1(ci, di),2)
-            P.append(b0)
-            P.append(b1)
-        elif ci == cn and cn != 0 and di != dn:
-            b2 = round(bound2(ci, di),2)
-            P.append(b2)
-
-    P = sorted(P)
-    P = [-inf] + P + [inf]
-
-    m = len(P) - 1
-
-    N = [0 for _ in range(m)]
-    M = [0 for _ in range(m)]
-
-    for i in range(n - 1):
-        for j in range(m):
-            if  C[i] * P[j] + D[i] >= cn * P[j] + dn:
-                M[j] += 1
-                if C[i] * P[j+1] + D[i] >= cn * P[j+1] + dn:
-                    N[j] += 1
-
-    e = 0.08
-
-    intervals = []
-    for j in range(1, m):
-        if N[j] / n > e:
-            intervals.append([P[j], P[j+1]])
-        elif M[j] / n > e:
-            intervals.append([P[j], P[j]])
-
-    i = 0; j = 1; idx_reduced = []
-    while j < len(intervals):
-        if intervals[i][1] == intervals[j][0]:
-            intervals[i][1] = intervals[j][1]
-        else:
-            idx_reduced.append(i)
-            i = j
-        j += 1
-
-    # Flag for convex hull of intervals
-    if len(idx_reduced) > 0:
-        reduced = [intervals[i] for i in idx_reduced]
-    else:
-        reduced = [intervals[0]]
-    print(reduced)
+    nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
+    clf = RRCM(nn, [0.02, 0.08])
+    clf.train(X[:-1], y)
+    res = clf.score_online(X[-1], 1.6)
+    print(res)
 
 def main():
     regression()

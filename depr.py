@@ -8,6 +8,52 @@ from conform.ncs import NC1NN
 
 from tests import IRIS_SUBSET_X, IRIS_SUBSET_Y
 
+# {{{
+class LinearRegression:
+    def generate(self, X, y):
+        # TODO: for multidimensional X
+        X = X.reshape(-1,)
+
+        n = X.shape[0]
+        m = mean(X)
+        s = sum(y)
+        t = sum([(X[i] - m) * y[i] for i in range(n - 1)])
+        w = X[n - 1] - m
+        u = sum([(X[i] - m) ** 2 for i in range(n)])
+        v = sum(X)
+        z = v / n
+
+        a = - 1 / n + z * w / u
+        b = - w / u
+
+        e = t / u
+        f = z * t / u - s / n
+
+        def c(xi, yi = None):
+            if yi == None:
+                return 1 + a + xi * b
+            else:
+                return a + xi * b
+
+        def d(xi, yi = None):
+            if yi == None:
+                return - xi * e + f
+            else:
+                return yi - xi * e + f
+
+        C = []; D = []
+        for (x_, y_) in zip(X, y):
+            ci = c(x_, y_)
+            di = d(x_, y_)
+            C.append(ci)
+            D.append(di)
+
+        cn = c(X[-1])
+        dn = d(X[-1])
+
+        return C, D, cn, dn
+# }}}
+
 # TODO:
 #       Predicted class
 #       make NC1NN beautiful and readable

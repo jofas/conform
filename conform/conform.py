@@ -3,14 +3,16 @@ import random
 
 from .metrics import CPMetrics
 from .ncs.base import NCSBase
-from . import _data_obs as _do
+from . import util
 
-class __CPBase:
+INVALID_A = "Non-conformity classifier invalid"
+
+class _CPBase:
     def __init__( self, A, epsilons, labels, smoothed
                 , mondrian_taxonomy ):
 
         if NCSBase not in type(A).__bases__:
-            raise Exception("Non-conformity score invalid")
+            raise Exception(INVALID_A)
 
         self.A                 = A
         self.epsilons          = epsilons
@@ -26,10 +28,10 @@ class __CPBase:
         self.ks         = []
 
     def train(self, X, y, override = False):
-        X, y = _do.format(X, y)
+        X, y = util.format(X, y)
 
         if not override and self.init_train:
-            self.X_train, self.y_train = _do.append(
+            self.X_train, self.y_train = util.append(
                 self.X_train, self.y_train, X, y
             )
         else:
@@ -44,7 +46,7 @@ class __CPBase:
             for (x_,y_) in zip(X,y)]
 
     def predict(self, X):
-        X = _do.format(X)
+        X = util.format(X)
 
         res = []
         for x in X:
@@ -66,12 +68,12 @@ class __CPBase:
         return res
 
     def score(self, X, y):
-        X, y = _do.format(X, y)
+        X, y = util.format(X, y)
 
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
 
-        for (p_, x_, y_) in zip(predicted, X, y):
+        for p_, x_, y_ in zip(predicted, X, y):
             k = self.mondrian_taxonomy(x_, y_)
             res.update(p_, y_, k)
 
@@ -97,7 +99,7 @@ class __CPBase:
 
 def _not_mcp(x, y): return 0
 
-class CP(__CPBase):
+class CP(_CPBase):
     def __init__( self, A, epsilons, labels, smoothed=False
                 , mondrian_taxonomy=_not_mcp ):
         super().__init__( A, epsilons, labels, smoothed
@@ -109,22 +111,22 @@ class CP(__CPBase):
                           , cp = True )
 
     def score_online(self, X, y):
-        X, y = _do.format(X, y)
+        X, y = util.format(X, y)
 
         res = CPMetrics(self.epsilons)
 
         count = 0
-        for (x_, y_) in zip(X, y):
+        for x_, y_ in zip(X, y):
             count += 1
-            if count % 500 == 0: print(str(count) + "\r")
+            if count % 5 == 0: print(str(count) + "\r")
             k = self.mondrian_taxonomy(x_, y_)
             p = self.predict(x_)[0]
             res.update(p, y_, k)
-            self.train(x_.reshape(1,-1), y_)
+            self.train(x_, y_)
 
         return res
 
-class ICP(__CPBase):
+class ICP(_CPBase):
     def __init__( self, A, epsilons, labels, smoothed=False
                 , mondrian_taxonomy=_not_mcp ):
         self.init_cal = False
@@ -135,10 +137,10 @@ class ICP(__CPBase):
                         , mondrian_taxonomy )
 
     def calibrate(self, X, y, override = False):
-        X, y = _do.format(X, y)
+        X, y = util.format(X, y)
 
         if not override and self.init_cal:
-            self.X_cal, self.y_cal = _do.append(
+            self.X_cal, self.y_cal = util.append(
                 self.X_cal, self.y_cal, X, y
             )
         else:
