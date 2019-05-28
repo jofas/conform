@@ -250,6 +250,21 @@ def knn_regression():
     nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
     clf = RRCM(nn, [0.005, 0.01, 0.025, 0.05, 0.1])
     res = clf.score_online(X, y)
+    print("online")
+    print(res)
+
+    nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
+    clf = RRCM(nn, [0.005, 0.01, 0.025, 0.05, 0.1])
+    clf.train(X[:400], y[:400])
+    res = clf.score_online(X[400:], y[400:])
+    print("400 -> online")
+    print(res)
+
+    nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
+    clf = RRCM(nn, [0.005, 0.01, 0.025, 0.05, 0.1])
+    clf.train(X[:400], y[:400])
+    res = clf.score(X[400:], y[400:])
+    print("400 -> offline")
     print(res)
 
 def main():
