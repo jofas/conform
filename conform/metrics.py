@@ -1,5 +1,8 @@
 import numpy as np
 
+from infinity import inf
+from statistics import mean, median
+
 class CPMetrics:
     def __init__(self, epsilons):
         self.epsilons = epsilons
@@ -145,22 +148,59 @@ class RRCMMetrics:
             self.eps[e].update(predicted[e], y)
 
     def __repr__(self):
-        return str(self.__dict__)
+        res = "epsilon  status  err  {}  {}\n".format(
+            "    mean width  median width",
+            "{:>7}  {:>7}".format("n",  "ok")
+        )
+
+        res += "-" * 68 + "\n"
+
+        for e in self.eps:
+            res += "{:7}  {}  {}\n".format(
+                e, self.eps[e].accuracy(e), self.eps[e]
+            )
+
+        res += "-" * 68 + "\n"
+
+        return res
 
 class _IntervalMetrics():
     def __init__(self):
-        self.n = 0
-        self.ok = 0
+        self.n               = 0
+        self.ok              = 0
+        self.interval_widths = []
 
     def update(self, predicted, y):
         self.n += 1
         for interval in predicted:
+            if interval[0] != -inf and interval[1] != inf:
+                self.interval_widths.append(
+                    interval[1] - interval[0]
+                )
+
             if interval[0] <= y and y <= interval[1]:
                 self.ok += 1
-                break
 
     def accuracy(self, e):
-        pass
+        return _IntervalAccuracy(self, e)
 
     def __repr__(self):
-        return str(self.__dict__)
+        return "{:7d}  {:7d}".format(self.n, self.ok)
+
+class _IntervalAccuracy:
+    def __init__(self, im, e):
+        self.err = 1 - im.ok / im.n
+        self.mean_width = mean(im.interval_widths)
+        self.median_width = median(im.interval_widths)
+
+        if round(self.err, 5) <= e:
+            self.status = "OK"
+        else:
+            self.status = "FAILED"
+
+    def __repr__(self):
+        return "{:>6}  {:>.5f}  {:>10.2f}  {:>12.2f}" \
+            .format(
+                self.status, self.err,
+                self.mean_width, self.median_width
+            )

@@ -52,7 +52,9 @@ class RRCM:
             self.init_train            = True
 
         self.A.train(self.X_train, self.y_train)
-        self.C, self.D = self.A.coeffs(X, y, cp = True)
+        self.C, self.D = self.A.coeffs(
+            self.X_train, self.y_train, cp = True
+        )
 
     def predict(self, X):
         X = util.format(X)
@@ -89,6 +91,7 @@ class RRCM:
         for x_, y_ in zip(X, y):
             p = self.predict(x_)[0]
             res.update(p, y_)
+            self.train(x_, y_)
 
         return res
 
@@ -212,6 +215,11 @@ class RRCM:
 
     def __intervals(self, M, N0, N, P, n):
         m = len(P)
+
+        # happens if self.A is not initialized
+        # (score_online)
+        if m == 0:
+            return {k: [[-inf,inf]] for k in self.epsilons}
 
         res = {k: None for k in self.epsilons}
 

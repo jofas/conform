@@ -1,9 +1,12 @@
 from conform import CP, ICP, RRCM
 from conform.ncs import NC1NN, NCSNeuralNet, \
-    NCSDecisionTree, NCSKNearestNeighbors
+    NCSDecisionTree, NCSKNearestNeighbors, \
+    NCSKNearestNeighborsRegressor
 
 import h5py
 import numpy as np
+
+from sklearn.datasets import load_boston
 
 def load_usps():
     with h5py.File('usps.h5', 'r') as hf:
@@ -235,8 +238,31 @@ def descision_tree():
     res = cp.score(X_test, y_test)
     print(res)
 
+def knn_regression():
+    X, y = load_boston(True)
+
+    indices = np.arange(X.shape[0])
+    np.random.shuffle(indices)
+
+    X = X[indices]
+    y = y[indices]
+
+    nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
+    clf = RRCM(nn, [0.005, 0.01, 0.025, 0.05, 0.1])
+    res = clf.score_online(X, y)
+    print(res)
+
+def main():
+    knn_regression()
+    #usps_nc1nn()
+    #knn()
+    #neural_net()
+    #descision_tree()
+
+if __name__ == '__main__':
+    main()
+
 def regression():
-    from conform.ncs import NCSKNearestNeighborsRegressor
 
     X = np.array([[5.0],[4.4],[4.9],[4.4],[5.1]
                  ,[5.9],[5.0],[6.4],[6.7],[6.2]
@@ -255,12 +281,3 @@ def regression():
     res = clf.score_online(X[-1], 1.6)
     print(res)
 
-def main():
-    regression()
-    #usps_nc1nn()
-    #knn()
-    #neural_net()
-    #descision_tree()
-
-if __name__ == '__main__':
-    main()

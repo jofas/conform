@@ -78,28 +78,40 @@ class _LabelNN:
 
 class NCSKNearestNeighborsRegressor(NCSBaseRegressor):
     def __init__(self, **sklearn):
-        self.nn = NN(**sklearn)
-        self.y  = None
+        self.nn     = NN(**sklearn)
+        self.y      = []
+        self.fitted = False
 
     def train(self, X, y):
         self.nn.fit(X, y)
         self.y = y
+        if len(self.y) > 1: self.fitted = True
 
     def coeffs(self, X, y, cp):
         C = [0.0 for _ in X]
         D = []
 
+        if not self.fitted: return C, y
+
         n = self.__n()
-        if cp: nns = self.nn.kneighbors(n_neighbors = n)
-        else:  nns = self.nn.kneighbors(X, n_neighbors = n)
+        if cp:
+            nns = self.nn.kneighbors(
+                n_neighbors = \
+                    n - 1 if self.nn.n_neighbors > 1 \
+                        else n
+            )
+        else:
+            nns = self.nn.kneighbors(X, n_neighbors = n)
 
         for i, ns in enumerate(nns[1]):
-            ys = [y[idx] for idx in ns]
+            ys = [self.y[idx] for idx in ns]
             D.append(y[i] - mean(ys))
 
         return C, D
 
     def coeffs_n(self, x):
+        if not self.fitted: return 1.0, 0.0
+
         nns = self.nn.kneighbors(
             x.reshape(1, -1), n_neighbors = self.__n()
         )[1][0]

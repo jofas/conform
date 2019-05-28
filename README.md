@@ -2,8 +2,6 @@
 
 ## TODO
 
-- RRCMMetrics beautiful + testing (Boston Housing)
-
 - Venn
 
 - alternative output (CP, ICP) (tuple w. confidence, random
