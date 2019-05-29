@@ -4,9 +4,6 @@
 
 - Venn
 
-- alternative output (CP, ICP) (tuple w. confidence, random
-    prediction for muls, emps)
-
 - Meta
 
 - ACP ?

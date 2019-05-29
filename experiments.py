@@ -173,6 +173,13 @@ def neural_net():
     res = icp.score(X_test, y_test)
     print(res)
 
+    # only best
+    res = icp.predict_best(X_test)
+    res = np.array([[res[0][i], res[1][i]] \
+        for i in range(X_test.shape[0])])
+
+    print(res)
+
     '''
     # cp offline mondrian
     X_train = np.vstack((X_train, X_cal))
@@ -187,6 +194,7 @@ def neural_net():
     print(res)
     '''
 
+    '''
     # cp offline
     X_train = np.vstack((X_train, X_cal))
     y_train = np.vstack((y_train, y_cal))
@@ -197,6 +205,7 @@ def neural_net():
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
+    '''
 
 def descision_tree():
     X, y = load_usps_random()
@@ -227,6 +236,15 @@ def descision_tree():
     res = icp.score(X_test, y_test)
     print(res)
 
+    # only best
+    res = icp.predict_best(X_test)
+    res = np.array([[res[0][i], res[1][i]] \
+        for i in range(X_test.shape[0])])
+
+    print(res)
+    print(icp.predict_best(X_test, False))
+
+    '''
     # cp offline
     X_train = np.vstack((X_train, X_cal))
     y_train = np.append(y_train, y_cal)
@@ -237,6 +255,7 @@ def descision_tree():
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
+    '''
 
 def knn_regression():
     X, y = load_boston(True)
@@ -268,11 +287,11 @@ def knn_regression():
     print(res)
 
 def main():
-    knn_regression()
+    #knn_regression()
     #usps_nc1nn()
     #knn()
-    #neural_net()
-    #descision_tree()
+    neural_net()
+    descision_tree()
 
 if __name__ == '__main__':
     main()

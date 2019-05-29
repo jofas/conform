@@ -67,6 +67,41 @@ class _CPBase:
 
         return res
 
+    def predict_best(self, X, p_vals = True):
+        X = util.format(X)
+
+        pred = []; p_vals_ = []
+        for x in X:
+            score_per_label = self.A.score(x, self.labels)
+            ps = []
+            for (l,s) in zip(self.labels,score_per_label):
+                k = self.mondrian_taxonomy(x, l)
+                p = self.__p_val_smoothed(s,k) \
+                    if self.smoothed else self.__p_val(s,k)
+                ps.append((l,p))
+
+            ps = sorted(ps,key=lambda x: x[1],reverse=True)
+
+            j = 1
+            while j < len(self.labels):
+                if ps[0][1] != ps[j][1]: break
+                j += 1
+
+            if j == 1:
+                pred.append(ps[0][0])
+            else:
+                pred.append(random.choice(
+                    [ps[i][0] for i in range(j)]
+                ))
+
+            if p_vals:
+                p_vals_.append(ps[j][1])
+
+        if p_vals:
+            return np.array(pred), np.array(p_vals_)
+        else:
+            return np.array(pred)
+
     def score(self, X, y):
         X, y = util.format(X, y)
 
