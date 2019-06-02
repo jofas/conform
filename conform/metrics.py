@@ -164,7 +164,7 @@ class RRCMMetrics:
 
         return res
 
-class _IntervalMetrics():
+class _IntervalMetrics:
     def __init__(self):
         self.n               = 0
         self.ok              = 0
@@ -204,3 +204,49 @@ class _IntervalAccuracy:
                 self.status, self.err,
                 self.mean_width, self.median_width
             )
+
+class VennMetrics:
+    def __init__(self):
+        self.n      = 0
+        self.err    = 0
+        self.bounds = [0.0, 0.0]
+
+    def update(self, predicted, y, bounds):
+        self.n         += 1
+        self.err       += predicted != y
+        self.bounds[0] += bounds[0]
+        self.bounds[1] += bounds[1]
+
+    def accuracy(self):
+        return _VennAccuracy(self)
+
+    def __repr__(self):
+        res = "{}  {}\n".format(
+            "status  %err     mean lower  mean upper",
+            "{:>7}  {:>7}".format("n", "err")
+        )
+
+        res += "{}\n".format("-" * 57)
+
+        res += "{}  {:7d}  {:7d}\n".format(
+            self.accuracy(), self.n, self.err
+        )
+
+        res += "{}\n".format("-" * 57)
+
+        return res
+
+class _VennAccuracy:
+    def __init__(self, vm):
+        self.err = vm.err / vm.n
+        self.mean_bounds = np.array(vm.bounds) / vm.n
+
+        if self.err <= self.mean_bounds[1]:
+            self.status = "OK"
+        else:
+            self.status = "FAILED"
+
+    def __repr__(self):
+        return "{:>6}  {:>.5f}  {:>.8f}  {:>.8f}".format(
+            self.status, self.err, *self.mean_bounds
+        )

@@ -1,7 +1,9 @@
-from conform import CP, ICP, RRCM
+from conform import CP, ICP, RRCM, Venn
 from conform.ncs import NC1NN, NCSNeuralNet, \
     NCSDecisionTree, NCSKNearestNeighbors, \
     NCSKNearestNeighborsRegressor
+
+from conform.vtx import VTXKNearestNeighbors
 
 import h5py
 import numpy as np
@@ -9,7 +11,7 @@ import numpy as np
 from sklearn.datasets import load_boston
 
 def load_usps():
-    with h5py.File('usps.h5', 'r') as hf:
+    with h5py.File('data/usps.h5', 'r') as hf:
         train = hf.get('train')
         X_tr = train.get('data')[:]
         y_tr = train.get('target')[:]
@@ -286,12 +288,27 @@ def knn_regression():
     print("400 -> offline")
     print(res)
 
+def venn():
+    X, y = load_usps_random()
+
+    vtx = VTXKNearestNeighbors(np.arange(10),n_neighbors=1)
+    clf = Venn(vtx, np.arange(10))
+
+    clf.train(X[:8000], y[:8000])
+    res = clf.score(X[8000:], y[8000:])
+    print(res)
+
+    #clf = Venn(vtx, np.arange(10))
+    #res = clf.score_online(X[:500], y[:500])
+    #print(res)
+
 def main():
+    venn()
     #knn_regression()
     #usps_nc1nn()
     #knn()
-    neural_net()
-    descision_tree()
+    #neural_net()
+    #descision_tree()
 
 if __name__ == '__main__':
     main()

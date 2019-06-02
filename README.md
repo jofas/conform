@@ -2,13 +2,13 @@
 
 ## TODO
 
-- Venn
-
 - Meta
 
 - ACP ?
 
 ## Possible features/changes
+
+- nicer labels API (labels map?)
 
 - IRRCM
 
@@ -17,8 +17,6 @@
 - NCSBase -> NCSBaseClassifier
 
 - for MCP: epsilons 2d ((!) METRICS (!))
-
-- nicer labels API (labels map?)
 
 - experiments suite
 
