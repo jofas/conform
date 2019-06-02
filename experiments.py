@@ -2,13 +2,14 @@ from conform import CP, ICP, RRCM, Venn
 from conform.ncs import NC1NN, NCSNeuralNet, \
     NCSDecisionTree, NCSKNearestNeighbors, \
     NCSKNearestNeighborsRegressor
-
 from conform.vtx import VTXKNearestNeighbors
 
 import h5py
 import numpy as np
 
 from sklearn.datasets import load_boston
+from sklearn.model_selection import train_test_split
+
 
 def load_usps():
     with h5py.File('data/usps.h5', 'r') as hf:
@@ -302,8 +303,44 @@ def venn():
     #res = clf.score_online(X[:500], y[:500])
     #print(res)
 
+def oy_venn():
+    from oy.main import meta, standardize, reduce_data
+    from oy.import_data import import_data
+    from oy.pca import pca
+
+    from sklearn.decomposition import PCA
+
+    X, y, _ = import_data('oy/data/clean.csv')
+    print(len(X))
+    X, y = reduce_data(X, y, 0.1)
+
+    clf = PCA(n_components = 4)
+    X = clf.fit_transform(X)
+
+    print(clf.explained_variance_ratio_)
+    print(sum(clf.explained_variance_ratio_))
+
+    X, m = meta(X)
+    X = standardize(X, m)
+
+    y = [0 if x == -1.0 else 1 for x in y]
+    X, y = np.array(X), np.array(y)
+
+    #print(float(sys.getsizeof(X)) / ( 2**20))
+
+    vtx = VTXKNearestNeighbors(np.arange(2),n_neighbors=1)
+    clf = Venn(vtx, np.arange(2))
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size = 0.1)
+
+    clf.train(X_train, y_train)
+    res = clf.score(X_test, y_test)
+    print(res)
+
 def main():
-    venn()
+    oy_venn()
+    #venn()
     #knn_regression()
     #usps_nc1nn()
     #knn()
