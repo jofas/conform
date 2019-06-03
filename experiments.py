@@ -51,11 +51,12 @@ def compile_model(in_dim, out_dim):
     model.add(Dense( units=128, activation='tanh'
                    , input_dim=in_dim ))
     model.add(Dense(units=128, activation='tanh'))
+    model.add(Dense(units=128, activation='tanh'))
     model.add(Dense( units=out_dim
                    , activation='softmax'))
 
     model.compile(
-        loss='mean_squared_error',
+        loss='categorical_crossentropy',
         optimizer='adam',
         metrics=['accuracy']
     )
@@ -63,6 +64,8 @@ def compile_model(in_dim, out_dim):
     return model
 
 def mondrian_each_label_nn(x, y): return np.argmax(y)
+
+def mondrian_each_label(x, y): return y
 
 def usps_nc1nn():
     from time import time
@@ -89,6 +92,7 @@ def usps_nc1nn():
     print("smoothed")
     print(res)
 
+# knn {{{
 def knn():
     X, y = load_usps_random()
 
@@ -128,7 +132,9 @@ def knn():
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
+# }}}
 
+# neural_net {{{
 def neural_net():
     X, y = load_usps_random()
     y = np.array(
@@ -209,7 +215,9 @@ def neural_net():
     res = cp.score(X_test, y_test)
     print(res)
     '''
+# }}}
 
+# decision_tree {{{
 def descision_tree():
     X, y = load_usps_random()
 
@@ -259,7 +267,9 @@ def descision_tree():
     res = cp.score(X_test, y_test)
     print(res)
     '''
+# }}}
 
+# knn_regression {{{
 def knn_regression():
     X, y = load_boston(True)
 
@@ -288,7 +298,9 @@ def knn_regression():
     res = clf.score(X[400:], y[400:])
     print("400 -> offline")
     print(res)
+# }}}
 
+# venn {{{
 def venn():
     X, y = load_usps_random()
 
@@ -302,7 +314,9 @@ def venn():
     #clf = Venn(vtx, np.arange(10))
     #res = clf.score_online(X[:500], y[:500])
     #print(res)
+# }}}
 
+# oy_venn {{{
 def oy_venn():
     from oy.main import meta, standardize, reduce_data
     from oy.import_data import import_data
@@ -328,7 +342,7 @@ def oy_venn():
 
     #print(float(sys.getsizeof(X)) / ( 2**20))
 
-    vtx = VTXKNearestNeighbors(np.arange(2),n_neighbors=1)
+    vtx = VTXKNearestNeighbors(np.arange(2),n_neighbors=3)
     clf = Venn(vtx, np.arange(2))
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -337,9 +351,147 @@ def oy_venn():
     clf.train(X_train, y_train)
     res = clf.score(X_test, y_test)
     print(res)
+# }}}
+
+# oy_neural_net {{{
+def oy_neural_net():
+    from oy.main import meta, standardize, reduce_data
+    from oy.import_data import import_data
+    from oy.pca import pca
+
+    from sklearn.decomposition import PCA
+
+    X, y, _ = import_data('oy/data/clean.csv')
+    print(len(X))
+    X, y = reduce_data(X, y, 0.1)
+
+    clf = PCA(n_components = 4)
+    X = clf.fit_transform(X)
+
+    print(clf.explained_variance_ratio_)
+    print(sum(clf.explained_variance_ratio_))
+
+    X, m = meta(X)
+    X = standardize(X, m)
+    X = np.array(X)
+
+    y = np.array(
+        [[0. if j != v else 1. for j in range(10)] \
+            for v in y])
+
+    indices = np.arange(X.shape[0])
+    np.random.shuffle(indices)
+
+    X = X[indices]
+    y = y[indices]
+
+    X_cal = X[:4000]
+    y_cal = y[:4000]
+
+    X     = X[4000:]
+    y     = y[4000:]
+
+    split = int(X.shape[0] * 0.9)
+
+    X_train = X[:split]
+    y_train = y[:split]
+
+    X_test  = X[split:]
+    y_test  = y[split:]
+
+    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+    labels = np.arange(2)
+
+    model = compile_model(X.shape[1], y.shape[1])
+
+    train = lambda X, y: model.fit(X, y, epochs=5, verbose=1)
+    predict = lambda X: model.predict(X)
+    ncs = NCSNeuralNet(train, predict)
+
+    '''
+    # icp mondrian
+    icp = ICP( ncs, epsilons, labels
+             , mondrian_taxonomy = mondrian_each_label_nn )
+    icp.train(X_train, y_train)
+    icp.calibrate(X_cal, y_cal)
+    res = icp.score(X_test, y_test)
+    print(res)
+    '''
+
+    # icp
+    model = compile_model(X.shape[1], y.shape[1])
+    icp = ICP(ncs, epsilons, labels)
+    icp.train(X_train, y_train)
+    icp.calibrate(X_cal, y_cal)
+    res = icp.score(X_test, y_test)
+    print(res)
+
+    # cp
+    X_train = np.vstack((X_train, X_cal))
+    y_train = np.vstack((y_train, y_cal))
+    model = compile_model(X.shape[1], y.shape[1])
+    cp = CP(ncs, epsilons, labels)
+    cp.train(X_train, y_train)
+    res = cp.score(X_test, y_test)
+    print(res)
+# }}}
+
+# oy_knn {{{
+def oy_knn():
+    from oy.main import meta, standardize, reduce_data
+    from oy.import_data import import_data
+    from oy.pca import pca
+
+    from sklearn.decomposition import PCA
+
+    X, y, _ = import_data('oy/data/clean.csv')
+    print(len(X))
+    X, y = reduce_data(X, y, 0.01)
+
+    clf = PCA(n_components = 8)
+    X = clf.fit_transform(X)
+
+    print(clf.explained_variance_ratio_)
+    print(sum(clf.explained_variance_ratio_))
+
+    #X, m = meta(X)
+    #X = standardize(X, m)
+    y = [0 if x == -1.0 else 1 for x in y]
+
+    X, y = np.array(X), np.array(y)
+
+    indices = np.arange(X.shape[0])
+    np.random.shuffle(indices)
+
+    X = X[indices]
+    y = y[indices]
+
+    X_cal = X[:10000]
+    y_cal = y[:10000]
+
+    X_train = X[10000:-70000]
+    y_train = y[10000:-70000]
+
+    X_test  = X[-70000:]
+    y_test  = y[-70000:]
+
+    epsilons = [0.001, 0.005, 0.01, 0.02, 0.025, 0.05]
+    labels = np.arange(2)
+
+    ncs = NCSKNearestNeighbors(labels, n_neighbors=1)
+
+    icp = ICP( ncs, epsilons, labels
+             , mondrian_taxonomy = mondrian_each_label )
+    icp.train(X_train, y_train)
+    icp.calibrate(X_cal, y_cal)
+    res = icp.score(X_test, y_test)
+    print(res)
+# }}}
 
 def main():
-    oy_venn()
+    oy_knn()
+    #oy_neural_net()
+    #oy_venn()
     #venn()
     #knn_regression()
     #usps_nc1nn()
