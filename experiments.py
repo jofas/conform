@@ -1,4 +1,4 @@
-from conform import CP, ICP, RRCM, Venn
+from conform import CP, ICP, RRCM, Venn, Meta
 from conform.ncs import NC1NN, NCSNeuralNet, \
     NCSDecisionTree, NCSKNearestNeighbors, \
     NCSKNearestNeighborsRegressor
@@ -9,7 +9,7 @@ import numpy as np
 
 from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
-
+from sklearn.neighbors import KNeighborsClassifier as NN
 
 def load_usps():
     with h5py.File('data/usps.h5', 'r') as hf:
@@ -488,6 +488,44 @@ def oy_knn():
     print(res)
 # }}}
 
+def meta():
+    X, y = load_usps_random()
+
+    #X_cal = X[:200]
+    #y_cal = y[:200]
+
+    #X     = X[200:]
+    #y     = y[200:]
+
+    split = int(X.shape[0] / 3)
+
+    X_train = X[:2*split]
+    y_train = y[:2*split]
+
+    X_test  = X[2*split:]
+    y_test  = y[2*split:]
+
+    B = NN()
+
+    B_train   = lambda X, y: B.fit(X, y)
+    B_predict = lambda X: B.predict(X)
+
+    ncs = NCSKNearestNeighbors(np.arange(2), n_neighbors=1)
+    M   = CP(ncs, [], np.arange(2))
+
+    M_train   = lambda X, y: M.train(X, y, override = True)
+    M_predict = lambda X: M.p_vals(X)
+
+    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+    labels = np.arange(10)
+
+    clf = Meta( M_train, M_predict, B_train, B_predict
+              , epsilons, labels )
+
+    clf.train(X_train, y_train, k_folds = 5)
+    res = clf.score(X_test, y_test)
+    print(res)
+
 def main():
     #oy_knn()
     #oy_neural_net()
@@ -497,7 +535,8 @@ def main():
     #usps_nc1nn()
     #knn()
     #neural_net()
-    descision_tree()
+    meta()
+    #descision_tree()
 
 if __name__ == '__main__':
     main()

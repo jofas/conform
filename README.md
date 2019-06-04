@@ -4,7 +4,8 @@
 
 - Meta
 
-- (Mondrian) Partial (as Mixin using epsilons)
+- (Mondrian) Abstentation (as Mixin using epsilons) and
+  VennAbstentation
 
 - Venn predict flag for returning single probability 
   (min, max, mean, median, width (?))
