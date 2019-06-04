@@ -49,10 +49,8 @@ class _CPBase:
         X = util.format(X)
 
         res = []
-        for x in X:
+        for p_vec in self.p_vals(X):
             predicted = { e: [] for e in self.epsilons }
-
-            p_vec = self.p_vals(x)
 
             for p, l in zip(p_vec, self.labels):
                 for epsilon in self.epsilons:
@@ -67,8 +65,7 @@ class _CPBase:
         X = util.format(X)
 
         pred = []; p_vals_ = []
-        for x in X:
-            p_vec = self.p_vals(x)
+        for p_vec in self.p_vals(X):
 
             ps = [(l,p) for l,p in zip(self.labels, p_vec)]
 
@@ -106,18 +103,19 @@ class _CPBase:
 
         return res
 
-    def p_vals(self, x, return_labels = False):
-        scores = self.A.score(x, self.labels)
+    def p_vals(self, X):
+        X = util.format(X)
+
         p_fn = self.__p_vals_smoothed if self.smoothed \
             else self.__p_vals
 
-        res = [p_fn(s, self.mondrian_taxonomy(x, l)) \
-            for s, l in zip(scores, self.labels)]
-
-        if return_labels:
-            return np.array(res), self.labels
-        else:
-            return np.array(res)
+        return np.array([[
+            p_fn(s, self.mondrian_taxonomy(x, l)) \
+                for s, l in zip(
+                    self.A.score(x, self.labels),
+                    self.labels
+                )
+        ] for x in X])
 
     def __p_vals_smoothed(self, s, k):
         eq, greater, cc = self.__p_val_counter(s, k)
