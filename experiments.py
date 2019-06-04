@@ -489,7 +489,7 @@ def oy_knn():
 # }}}
 
 def main():
-    oy_knn()
+    #oy_knn()
     #oy_neural_net()
     #oy_venn()
     #venn()
@@ -497,7 +497,7 @@ def main():
     #usps_nc1nn()
     #knn()
     #neural_net()
-    #descision_tree()
+    descision_tree()
 
 if __name__ == '__main__':
     main()

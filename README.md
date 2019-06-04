@@ -4,9 +4,14 @@
 
 - Meta
 
-- ACP ?
+- (Mondrian) Partial (as Mixin using epsilons)
+
+- Venn predict flag for returning single probability 
+  (min, max, mean, median, width (?))
 
 ## Possible features/changes
+
+- ACP
 
 - nicer labels API (labels map?)
 

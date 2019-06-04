@@ -16,7 +16,7 @@ class _CPBase:
 
         self.A                 = A
         self.epsilons          = epsilons
-        self.labels            = labels
+        self.labels            = np.array(labels)
         self.smoothed          = smoothed
         self.mondrian_taxonomy = mondrian_taxonomy
 
@@ -52,13 +52,9 @@ class _CPBase:
         for x in X:
             predicted = { e: [] for e in self.epsilons }
 
-            score_per_label = self.A.score(x, self.labels)
+            p_vec = self.p_vals(x)
 
-            for (l,s) in zip(self.labels,score_per_label):
-                k = self.mondrian_taxonomy(x, l)
-                p = self.__p_val_smoothed(s,k) \
-                    if self.smoothed else self.__p_val(s,k)
-
+            for p, l in zip(p_vec, self.labels):
                 for epsilon in self.epsilons:
                     if p > epsilon:
                         predicted[epsilon].append(l)
@@ -72,13 +68,9 @@ class _CPBase:
 
         pred = []; p_vals_ = []
         for x in X:
-            score_per_label = self.A.score(x, self.labels)
-            ps = []
-            for (l,s) in zip(self.labels,score_per_label):
-                k = self.mondrian_taxonomy(x, l)
-                p = self.__p_val_smoothed(s,k) \
-                    if self.smoothed else self.__p_val(s,k)
-                ps.append((l,p))
+            p_vec = self.p_vals(x)
+
+            ps = [(l,p) for l,p in zip(self.labels, p_vec)]
 
             ps = sorted(ps,key=lambda x: x[1],reverse=True)
 
@@ -114,12 +106,25 @@ class _CPBase:
 
         return res
 
-    def __p_val_smoothed(self, s, k):
+    def p_vals(self, x, return_labels = False):
+        scores = self.A.score(x, self.labels)
+        p_fn = self.__p_vals_smoothed if self.smoothed \
+            else self.__p_vals
+
+        res = [p_fn(s, self.mondrian_taxonomy(x, l)) \
+            for s, l in zip(scores, self.labels)]
+
+        if return_labels:
+            return np.array(res), self.labels
+        else:
+            return np.array(res)
+
+    def __p_vals_smoothed(self, s, k):
         eq, greater, cc = self.__p_val_counter(s, k)
         return (greater + random.uniform(0.0, 1.0) * eq) \
              / cc
 
-    def __p_val(self, s, k):
+    def __p_vals(self, s, k):
         eq, greater, cc = self.__p_val_counter(s, k)
         return (eq + greater) / cc
 
