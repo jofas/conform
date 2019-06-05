@@ -497,32 +497,43 @@ def meta():
     #X     = X[200:]
     #y     = y[200:]
 
-    split = int(X.shape[0] / 3)
+    split = int(X.shape[0] / 10)
 
-    X_train = X[:2*split]
-    y_train = y[:2*split]
+    X_train = X[:9*split]
+    y_train = y[:9*split]
 
-    X_test  = X[2*split:]
-    y_test  = y[2*split:]
+    X_test  = X[9*split:]
+    y_test  = y[9*split:]
 
-    B = NN()
+    B = NN(n_neighbors=1)
 
     B_train   = lambda X, y: B.fit(X, y)
     B_predict = lambda X: B.predict(X)
 
     ncs = NCSKNearestNeighbors(np.arange(2), n_neighbors=1)
-    M   = CP(ncs, [], np.arange(2))
+    M   = ICP(ncs, [], np.arange(2))
 
-    M_train   = lambda X, y: M.train(X, y, override = True)
+    def M_train(X, y):
+        split = int(X.shape[0] / 5)
+
+        X_train = X[:4*split]
+        y_train = y[:4*split]
+
+        X_cal   = X[4*split:]
+        y_cal   = y[4*split:]
+
+        M.train(X_train, y_train, override = True)
+        M.calibrate(X_cal, y_cal)
+
     M_predict = lambda X: M.p_vals(X)
 
-    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+    epsilons = [0.001, 0.01, 0.025, 0.05, 0.1]
     labels = np.arange(10)
 
     clf = Meta( M_train, M_predict, B_train, B_predict
               , epsilons, labels )
 
-    clf.train(X_train, y_train, k_folds = 5)
+    clf.train(X_train, y_train, k_folds = 5, plot = True)
     res = clf.score(X_test, y_test)
     print(res)
 

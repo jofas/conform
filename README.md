@@ -2,8 +2,6 @@
 
 ## TODO
 
-- Meta
-
 - (Mondrian) Abstentation (as Mixin using epsilons) and
   VennAbstentation
 
@@ -15,6 +13,8 @@
 - ACP
 
 - nicer labels API (labels map?)
+
+- Meta: nice ROC plot -> flag for train
 
 - IRRCM
 

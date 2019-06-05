@@ -250,3 +250,66 @@ class _VennAccuracy:
         return "{:>6}  {:>.5f}  {:>.8f}  {:>.8f}".format(
             self.status, self.err, *self.mean_bounds
         )
+
+class MetaMetrics:
+    def __init__(self, epsilons):
+        self.eps = {e: _MetaEpsilonMetrics() \
+            for e in epsilons}
+
+    def update(self, predicted, y):
+        for e in self.eps:
+            self.eps[e].update(predicted[e], y)
+
+    def __repr__(self):
+        res = "epsilon  status  {}  {}\n".format(
+            "    %err  %rejected",
+            "      n      err  rejected"
+        )
+
+        res += "{}\n".format(64 * "-")
+
+        for e in self.eps:
+            res += "{:7}  {}  {}\n".format(
+                e, self.eps[e].accuracy(e), self.eps[e]
+            )
+
+        res += "{}\n".format(64 * "-")
+
+        return res
+
+class _MetaEpsilonMetrics:
+    def __init__(self):
+        self.n        = 0
+        self.err      = 0
+        self.rejected = 0
+
+    def update(self, predicted, y):
+        self.n += 1
+
+        if predicted == -1: self.rejected += 1
+        elif predicted != y: self.err += 1
+
+    def accuracy(self, e):
+        return _MetaEpsilonAccuracy(self, e)
+
+    def __repr__(self):
+        return "{:7d}  {:7d}   {:7d}".format(
+            self.n, self.err, self.rejected
+        )
+
+class _MetaEpsilonAccuracy:
+    def __init__(self, mem, e):
+        self.prc_err = mem.err / mem.n
+        self.prc_rejected = mem.rejected / mem.n
+
+        if round(self.prc_err, 5) <= e:
+            self.status = "OK"
+        else:
+            self.status = "FAILED"
+
+    def __repr__(self):
+        return "{:>6}  {:> .5f}   {:> .5f}".format(
+            self.status,
+            self.prc_err,
+            self.prc_rejected
+        )
