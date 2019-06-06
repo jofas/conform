@@ -1,0 +1,131 @@
+\documentclass[twoside,11pt]{article}
+\usepackage{jmlr2e}
+\usepackage{fontawesome}
+\usepackage[page]{appendix}
+\usepackage{xcolor}
+\usepackage[marginparsep=30pt]{geometry}
+\usepackage{marginnote}
+
+\def\version{\texttt{v0.1.0}}
+\def\libconform{\texttt{libconform}}
+\def\info{\textcolor{blue}{\faInfo}}
+\def\alert{\textcolor{red}{\faExclamation}}
+
+\title{\libconform{} \version: a Python library for
+       conformal prediction}
+
+\author{\name Jonas Fa{\ss}bender
+        \email jonas@fassbender.dev}
+
+\ShortHeadings{\libconform{} \version{}}{Fa{\ss}bender}
+\firstpageno{1}
+
+\begin{document}
+
+\maketitle
+
+%\begin{abstract}%
+%\end{abstract}
+
+%\begin{keywords}
+%\end{keywords}
+
+
+\section{Introduction}
+
+This paper introduces the Python library \libconform,
+implementing concepts defined in \citet{alrw}, namely the
+conformal prediction framework and Venn prediction for
+reliable machine learning.
+These algorithms address a weakness of more traditional
+machine learning algorithms which produce only bare
+predictions, without their confidence in them/the
+probability of the prediction, therefore providing no
+measure of likelihood, desirable and even necessary in many
+real-world application domains.
+
+The conformal prediction framework is composed of
+variations of the conformal prediction algorithm (CP),
+first described in
+\citet{vovk_et_al_1999, saunders_et_al_1999}.
+A conformal predictor provides a measurement of confidence
+in its predictions.
+A Venn predictor, on the other hand, provides a
+multi-probabilistic measurement, making it a probabilistic
+predictor.
+Below in the text, Venn predictors are included if only
+``conformal prediction framework'' is written, except
+stated otherwise.
+
+The conformal prediction framework is applied successfully
+in many real-world domains, for example face recognition,
+medical diagnostic and prognostic and network traffic
+classification \citep[see][part 3]{cprml}.
+
+It is build on traditional machine learning algorithms, the
+so called underlying algorithms
+\citep[see][]{papadopoulos_et_al_2007}, which makes Python
+the first choice for implementation, since its machine
+learning libraries are top of the class, still evolving and
+improving due to the commitment of a great community of
+developers and researchers.
+
+\libconform's aim is to provide an easy to use, but very
+extensible API for the conformal prediction framework, so
+developers can use their preferred implementations for the
+underlying algorithm and can leverage the library, even in
+this early stage.
+\libconform{} \version{} is \textbf{not} yet stable; there
+are still features missing and the API is very likely to
+change and improve.
+The library is licensed under the MIT-license and its
+source code can be downloaded from
+\url{https://github.com/jofas/conform}.
+
+This paper combines \libconform{}'s documentation with a
+short introduction to the implemented algorithms.
+Paragraphs marked with \info{} contain general information
+about the library and descriptions of the
+internal workings, while paragraphs marked
+with \alert{} describe changes in future versions.
+
+Appendix~\ref{appendix:a} provides an overview over
+\libconform's API and Appendix~\ref{appendix:b} contains
+examples on how to use the library.
+
+%\marginnote{\info{}}[2.7em]
+
+\section{Nonconformity scores}
+
+\section{Conformal predictors}
+
+\subsection{Smoothed conformal predictors}
+
+\subsection{Conformal predictor for regression: ridge
+            regression confidence machine}
+
+\section{Inductive conformal predictors}
+
+\section{Mondrian (inductive) conformal predictors}
+
+\section{Probabilistic prediction: Venn predictors}
+
+\section{Meta-conformal predictors}
+
+\section{Conclusion}
+
+\renewcommand{\appendixpagename}{}
+\begin{appendices}
+  \section*{Appendices}
+
+  \section{API reference}
+  \label{appendix:a}
+
+  \section{Examples}
+  \label{appendix:b}
+
+\end{appendices}
+
+\bibliography{libconform.bib}
+
+\end{document}

@@ -527,13 +527,13 @@ def meta():
 
     M_predict = lambda X: M.p_vals(X)
 
-    epsilons = [0.001, 0.01, 0.025, 0.05, 0.1]
+    epsilons = [0.01, 0.02, 0.025, 0.03]
     labels = np.arange(10)
 
     clf = Meta( M_train, M_predict, B_train, B_predict
               , epsilons, labels )
 
-    clf.train(X_train, y_train, k_folds = 5, plot = True)
+    clf.train(X_train, y_train, k_folds = 10, plot = False)
     res = clf.score(X_test, y_test)
     print(res)
 
