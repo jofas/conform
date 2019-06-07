@@ -1,10 +1,14 @@
 \documentclass[twoside,11pt]{article}
 \usepackage{jmlr2e}
+\usepackage{amsmath}
 \usepackage{fontawesome}
 \usepackage[page]{appendix}
 \usepackage{xcolor}
 \usepackage[marginparsep=30pt]{geometry}
 \usepackage{marginnote}
+\usepackage{stmaryrd}
+\usepackage{algorithm}
+\usepackage{algorithmic}
 
 \def\version{\texttt{v0.1.0}}
 \def\libconform{\texttt{libconform}}
@@ -83,7 +87,7 @@ source code can be downloaded from
 \url{https://github.com/jofas/conform}.
 
 This paper combines \libconform{}'s documentation with a
-short introduction to the implemented algorithms.
+outline of the implemented algorithms.
 Paragraphs marked with \info{} contain general information
 about the library and descriptions of the
 internal workings, while paragraphs marked
@@ -95,14 +99,138 @@ examples on how to use the library.
 
 %\marginnote{\info{}}[2.7em]
 
-\section{Nonconformity scores}
-
 \section{Conformal predictors}
 
-\subsection{Smoothed conformal predictors}
+Like stated in the introduction, this chapter will only
+outline conformal prediction (CP). For more details see
+\citet{alrw}.
+
+CP---like the name suggests---determines the label(s) of an
+incoming observation based on how well it conforms with
+previous observed examples.
+Let $\Lbag z_1,\dots,z_n \Rbag$ be a bag, also called
+multiset%
+\footnote{It is typical in machine learning to denote this
+as the training set, even though examples do not have to
+be unique, making the so called set a multiset. A multiset
+is not a list, since the ordering of the elements is not
+important.},
+of examples, where each example $z_i \in \textbf{Z}$ is a
+tuple $(x_i,y_i); x_i \in \textbf{X}, y_i \in \textbf{Y}$.
+\textbf{X} is called the observation space and \textbf{Y}
+the label space. For this time \textbf{Y} is considered
+finite, making the task of prediction a classification
+task, rather than regression, which will be considered in
+chapter~\ref{subsec:rrcm}.
+
+A conformal predictor can be defined as a confidence
+predictor $\Gamma$. For this an input $\epsilon \in (0,1)$,
+the significance level is needed. $1 - \epsilon$ is called
+the confidence level. A conformal predictor
+$\Gamma^\epsilon$ is conservatively valid under the
+exchangeability assumption, which means, as long as
+exchangeability holds, it makes errors at
+a frequency of $\epsilon$ or less. For more on that refer
+to \citet[][chapters 1,2,7]{alrw}.
+
+CP, in its original setting, produces nested prediction
+sets. Rather than returning a single label as its
+prediction, it returns a set of elements
+$\textbf{Y}^\prime \in 2^{\textbf{Y}}$, $2^{\textbf{Y}}$
+being the set of all subsets of $\textbf{Y}$, including the
+empty set.
+The prediction sets are called nested, because, for
+$\epsilon_1 \geq \epsilon_2$, the prediction of
+$\Gamma^{\epsilon_1}$ is a subset of $\Gamma^{\epsilon_2}$
+\citep[see][chapter 2]{alrw}.
+
+In order to predict the label of a new observation
+$x_{n+1}$, set $z_{n+1}:=(x_{n+1}, y)$, for each
+$y \in \textbf{Y}$ and check how $z_{n+1}$ conforms with
+the examples of our bag $\Lbag z_1,\dots,z_n \Rbag$.
+
+This is done with a nonconformity measure
+$A_{n+1}:\textbf{Z}^n \times \textbf{Z} \rightarrow
+\mathbb{R}$. First, $z_{n+1}$ is added to the bag, then
+$A_{n+1}$ assigns a numerical score to each example in
+$z_i$:
+\begin{align}
+  \alpha_i = A_{n+1}(\Lbag z_1,\dots,z_{i-1},z_{i+1},
+             \dots,z_{n+1} \Rbag, z_i).
+\label{eq:a0}
+\end{align}
+One can see in this equation that $z_i$ is removed from the
+bag. It is also possible to compute $\alpha_i$ with $z_i$
+in the bag, which means for
+$A_{n+1}:\textbf{Z}^{n+1} \times \textbf{Z} \rightarrow
+\mathbb{R}$ the score is computed as:
+\begin{align}
+  \alpha_i = A_{n+1}(\Lbag z_1,\dots,z_{n+1} \Rbag, z_i).
+\label{eq:a1}
+\end{align}
+Which one is preferable is case-dependent
+\citep[see][chapter 4.2.2]{shafer_et_al_2008}.
+
+$\alpha_i$ is called nonconformity score.
+The nonconformity score can now be used to compute the
+p-value for $z_{n+1}$, which is the fraction of examples
+from the bag which are at least as nonconforming as
+$z_{n+1}$:
+\begin{align}
+  \frac{|\{i=1,\dots,n+1: \alpha_i \geq \alpha_{n+1}\}|}
+       {n + 1}.
+\label{eq:p0}
+\end{align}
+Another way to determine the p-value is through smoothing,
+in which case the nonconformity scores equal to
+$\alpha_{n+1}$ are multiplied by a random value
+$\tau_{n+1}$:
+\begin{align}
+  \frac{|\{i=1,\dots,n+1: \alpha_i > \alpha_{n+1}\}|
+    + \tau_{n+1} |\{i=1,\dots,n+1:\alpha_i=\alpha_{n+1}\}|}
+       {n + 1}
+\label{eq:p1}
+\end{align}
+A conformal predictor using the smoothed p-value is called
+a smoothed conformal predictor and is exactly valid under
+exchangeability, which means it makes errors at a rate
+exactly $\epsilon$ \citep[see][chapter 2]{alrw}.
+If the p-value of $z_{n+1}$ is larger than $\epsilon$, $y$
+is added to the prediction set.
+
+\begin{algorithm}
+  \caption{: Conformal predictor $\Gamma^\epsilon
+    (\Lbag z_1,\dots,z_n \Rbag, x_{n+1})$}
+
+  \begin{algorithmic}[1]
+    \FORALL{$y \in \textbf{Y}$}
+      \STATE{set $z_{n+1} := (x_{n+1}, y)$
+             and add it to the bag}
+      \FORALL{$i=1,\dots,n+1$}
+        \STATE{compute $\alpha_i$ with (\ref{eq:a0})
+               or (\ref{eq:a1})}
+      \ENDFOR
+      \STATE{set $p_y$ with (\ref{eq:p0}) or (\ref{eq:p1})}
+      \IF{$p_y > \epsilon$}
+        \STATE{add $p_y$ to prediction set}
+      \ENDIF
+    \ENDFOR
+    \RETURN{prediction set}
+  \end{algorithmic}
+\end{algorithm}
+
+% INFO on how implemented
+
+\subsection{Nonconformity measures based on underlying
+            algorithms}
+
+% D(x)
+
+% here info on how NCScores impl in libconform
 
 \subsection{Conformal predictor for regression: ridge
             regression confidence machine}
+\label{subsec:rrcm}
 
 \section{Inductive conformal predictors}
 
