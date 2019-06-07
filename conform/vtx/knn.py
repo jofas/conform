@@ -2,21 +2,24 @@ from infinity import inf
 from sklearn.neighbors import NearestNeighbors as NN
 
 from .base import VTXBase
+from .. import util
 
 class VTXKNearestNeighbors(VTXBase):
-    def __init__(self, labels, **sklearn):
+    def __init__(self, **sklearn):
         if "n_neighbors" in sklearn:
             sklearn["n_neighbors"] += 1
         else:
             sklearn["n_neighbors"] = 6
 
-        self.labels = labels
-        self.nn     = NN(**sklearn)
-        self.y      = []
-        self.n      = self.nn.n_neighbors
-        self.n_cur  = 0
+        self.max_label = 0
+        self.nn        = NN(**sklearn)
+        self.y         = []
+        self.n         = self.nn.n_neighbors
+        self.n_cur     = 0
 
     def train(self, X, y):
+        for y_ in y:
+            if y_ > self.max_label: self.max_label = y_
         self.nn.fit(X, y)
         self.y = y
         self.n_cur = self.n if len(X) > self.n else len(X)
@@ -33,8 +36,8 @@ class VTXKNearestNeighbors(VTXBase):
         if contains_x: nns = nns[1:]
         else:          nns = nns[:-1]
 
-        # no find label in y with highest count
-        count = { k: 0 for k in self.labels }
+        # now find label in y with highest count
+        count = { k: 0 for k in range(self.max_label + 1) }
         for idx in nns:
             count[self.y[idx]] += 1
 

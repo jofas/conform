@@ -3,6 +3,8 @@ import numpy as np
 from infinity import inf
 from statistics import mean, median
 
+from . import util
+
 class CPMetrics:
     def __init__(self, epsilons):
         self.epsilons = epsilons
@@ -73,7 +75,7 @@ class _EpsilonMetrics:
     def update(self, predicted, y):
         self.n += 1
 
-        y = self.__argmax(y)
+        y = util.as_argmax(y)
 
         if len(predicted) > 1:
             self.mul += 1
@@ -95,11 +97,6 @@ class _EpsilonMetrics:
                 self.n, self.mul, self.sin, self.emp,
                 self.err.mul, self.err.sin
             )
-
-    def __argmax(self, y):
-        if type(y) is np.ndarray:
-            return np.argmax(y)
-        return y
 
 class _EpsilonAccuracy:
     def __init__(self, em, e):

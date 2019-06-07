@@ -34,7 +34,7 @@ def test_score_from_tutorial():
     nn.train(X, y)
     s2 = nn.score(x_, [0,1])
 
-    nn = NCSKNearestNeighbors([0,1], n_neighbors=1)
+    nn = NCSKNearestNeighbors(n_neighbors=1)
     nn.train(X, y)
     s3 = nn.score(x_.reshape(1,-1), [0,1])
 
@@ -50,16 +50,16 @@ def test_nc_from_tutorial():
 
     res = [{0.05: [0,1], 0.08: [1], 0.33:[]}]
 
-    cp = CP(NC1NN(), epsilons, [0,1])
+    cp = CP(NC1NN(), epsilons)
     cp.train(X, y)
     res1 = cp.predict(x_)
 
-    cp = CP(NC1NN_py(), epsilons, [0,1])
+    cp = CP(NC1NN_py(), epsilons)
     cp.train(X, y)
     res2 = cp.predict(x_)
 
-    nn = NCSKNearestNeighbors([0,1], n_neighbors=1)
-    cp = CP(nn, epsilons, [0,1])
+    nn = NCSKNearestNeighbors(n_neighbors=1)
+    cp = CP(nn, epsilons)
     cp.train(X, y)
     res3 = cp.predict(x_)
 

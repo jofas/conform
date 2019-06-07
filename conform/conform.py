@@ -8,7 +8,7 @@ from . import util
 INVALID_A = "Non-conformity classifier invalid"
 
 class _CPBase:
-    def __init__( self, A, epsilons, labels, smoothed
+    def __init__( self, A, epsilons, smoothed
                 , mondrian_taxonomy ):
 
         if NCSBase not in type(A).__bases__:
@@ -16,7 +16,7 @@ class _CPBase:
 
         self.A                 = A
         self.epsilons          = epsilons
-        self.labels            = np.array(labels)
+        self.labels            = util.LabelMap()
         self.smoothed          = smoothed
         self.mondrian_taxonomy = mondrian_taxonomy
 
@@ -28,7 +28,7 @@ class _CPBase:
         self.ks         = []
 
     def train(self, X, y, override = False):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         if not override and self.init_train:
             self.X_train, self.y_train = util.append(
@@ -52,10 +52,12 @@ class _CPBase:
         for p_vec in self.p_vals(X):
             predicted = { e: [] for e in self.epsilons }
 
-            for p, l in zip(p_vec, self.labels):
+            for l, p in zip(self.labels, p_vec):
                 for epsilon in self.epsilons:
                     if p > epsilon:
-                        predicted[epsilon].append(l)
+                        predicted[epsilon].append(
+                            self.labels.reverse(l)
+                        )
 
             res.append(predicted)
 
@@ -67,7 +69,9 @@ class _CPBase:
         pred = []; p_vals_ = []
         for p_vec in self.p_vals(X):
 
-            ps = [(l,p) for l,p in zip(self.labels, p_vec)]
+            ps = [(l, p) for l, p in zip(
+                self.labels, p_vec
+            )]
 
             ps = sorted(ps,key=lambda x: x[1],reverse=True)
 
@@ -77,11 +81,12 @@ class _CPBase:
                 j += 1
 
             if j == 1:
-                pred.append(ps[0][0])
+                pred.append(self.labels.reverse(ps[0][0]))
             else:
-                pred.append(random.choice(
-                    [ps[i][0] for i in range(j)]
-                ))
+                pred.append(random.choice([
+                    self.labels.reverse(ps[i][0]) \
+                        for i in range(j)
+                ]))
 
             if p_vals:
                 p_vals_.append(ps[j][1])
@@ -92,14 +97,14 @@ class _CPBase:
             return np.array(pred)
 
     def score(self, X, y):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
 
         for p_, x_, y_ in zip(predicted, X, y):
             k = self.mondrian_taxonomy(x_, y_)
-            res.update(p_, y_, k)
+            res.update(p_, self.labels.reverse(y_), k)
 
         return res
 
@@ -138,9 +143,9 @@ class _CPBase:
 def _not_mcp(x, y): return 0
 
 class CP(_CPBase):
-    def __init__( self, A, epsilons, labels, smoothed=False
+    def __init__( self, A, epsilons, smoothed=False
                 , mondrian_taxonomy=_not_mcp ):
-        super().__init__( A, epsilons, labels, smoothed
+        super().__init__( A, epsilons, smoothed
                         , mondrian_taxonomy )
 
     def train(self, X, y, override = False):
@@ -149,7 +154,7 @@ class CP(_CPBase):
                           , cp = True )
 
     def score_online(self, X, y):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         res = CPMetrics(self.epsilons)
 
@@ -159,23 +164,23 @@ class CP(_CPBase):
             if count % 5 == 0: print(str(count) + "\r")
             k = self.mondrian_taxonomy(x_, y_)
             p = self.predict(x_)[0]
-            res.update(p, y_, k)
+            res.update(p, self.labels.reverse(y_), k)
             self.train(x_, y_)
 
         return res
 
 class ICP(_CPBase):
-    def __init__( self, A, epsilons, labels, smoothed=False
+    def __init__( self, A, epsilons, smoothed=False
                 , mondrian_taxonomy=_not_mcp ):
         self.init_cal = False
         self.X_cal    = None
         self.y_cal    = None
 
-        super().__init__( A, epsilons, labels, smoothed
+        super().__init__( A, epsilons, smoothed
                         , mondrian_taxonomy )
 
     def calibrate(self, X, y, override = False):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         if not override and self.init_cal:
             self.X_cal, self.y_cal = util.append(

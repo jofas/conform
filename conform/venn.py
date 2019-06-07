@@ -9,12 +9,12 @@ from . import util
 INVALID_VTX = "Venn Taxonomy invalid"
 
 class Venn:
-    def __init__(self, venn_taxonomy, labels):
+    def __init__(self, venn_taxonomy):
         if VTXBase not in type(venn_taxonomy).__bases__:
             raise Exception(INVALID_VTX)
 
         self.venn_taxonomy = venn_taxonomy
-        self.labels        = labels
+        self.labels        = util.LabelMap()
         self.categories    = {}
 
         self.init_train = False
@@ -22,7 +22,7 @@ class Venn:
         self.y_train    = None
 
     def train(self, X, y, override = False):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         if not override and self.init_train:
             self.X_train, self.y_train = util.append(
@@ -78,7 +78,7 @@ class Venn:
                     label        = i
                     label_column = column
 
-            pred.append(label)
+            pred.append(self.labels.reverse(label))
             if proba:
                 upper = max(label_column)
                 pred_proba.append(
@@ -91,24 +91,26 @@ class Venn:
             return np.array(pred)
 
     def score(self, X, y):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         res = VennMetrics()
         predicted = self.predict(X)
 
         for p_, bounds, y_ in zip(*predicted, y):
-            res.update(p_, y_, bounds)
+            res.update(p_, self.labels.reverse(y_), bounds)
 
         return res
 
     def score_online(self, X, y):
-        X, y = util.format(X, y)
+        X, y = util.format(X, y, self.labels)
 
         res = VennMetrics()
 
         for x_, y_ in zip(X, y):
             p, bounds = self.predict(x_)
-            res.update(p[0], y_, bounds[0])
+            res.update(
+                p[0], self.labels.reverse(y_), bounds[0]
+            )
             self.train(x_, y_)
 
         return res

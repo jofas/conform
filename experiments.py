@@ -111,27 +111,28 @@ def knn():
     y_test  = y[2*split:]
 
     epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
-    labels = np.arange(10)
 
     # icp
-    ncs = NCSKNearestNeighbors(labels, n_neighbors=1)
+    ncs = NCSKNearestNeighbors(n_neighbors=1)
 
-    icp = ICP(ncs, epsilons, labels)
+    icp = ICP(ncs, epsilons)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
     print(res)
 
     # cp offline
+    '''
     X_train = np.vstack((X_train, X_cal))
     y_train = np.append(y_train, y_cal)
 
     ncs = NCSKNearestNeighbors(labels, n_neighbors=1)
 
-    cp = CP(ncs, epsilons, labels)
+    cp = CP(ncs, epsilons)
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
+    '''
 # }}}
 
 # neural_net {{{
@@ -156,7 +157,6 @@ def neural_net():
     y_test  = y[2*split:]
 
     epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
-    labels = np.arange(10)
 
     model = compile_model(X.shape[1], y.shape[1])
 
@@ -166,7 +166,7 @@ def neural_net():
 
     '''
     # icp mondrian
-    icp = ICP( ncs, epsilons, labels
+    icp = ICP( ncs, epsilons,
              , mondrian_taxonomy = mondrian_each_label_nn )
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
@@ -176,7 +176,7 @@ def neural_net():
 
     # icp
     model = compile_model(X.shape[1], y.shape[1])
-    icp = ICP(ncs, epsilons, labels)
+    icp = ICP(ncs, epsilons)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
@@ -236,12 +236,11 @@ def descision_tree():
     y_test  = y[2*split:]
 
     epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
-    labels = np.arange(10)
 
     # icp
     ncs = NCSDecisionTree(min_samples_leaf=50)
 
-    icp = ICP(ncs, epsilons, labels)
+    icp = ICP(ncs, epsilons)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
@@ -262,7 +261,7 @@ def descision_tree():
 
     ncs = NCSDecisionTree(min_samples_leaf=50)
 
-    cp = CP(ncs, epsilons, labels)
+    cp = CP(ncs, epsilons)
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
@@ -303,9 +302,10 @@ def knn_regression():
 # venn {{{
 def venn():
     X, y = load_usps_random()
+    y = np.array(y, dtype=np.float64)
 
-    vtx = VTXKNearestNeighbors(np.arange(10),n_neighbors=1)
-    clf = Venn(vtx, np.arange(10))
+    vtx = VTXKNearestNeighbors(n_neighbors=1)
+    clf = Venn(vtx)
 
     clf.train(X[:8000], y[:8000])
     res = clf.score(X[8000:], y[8000:])
@@ -400,7 +400,6 @@ def oy_neural_net():
     y_test  = y[split:]
 
     epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
-    labels = np.arange(2)
 
     model = compile_model(X.shape[1], y.shape[1])
 
@@ -420,7 +419,7 @@ def oy_neural_net():
 
     # icp
     model = compile_model(X.shape[1], y.shape[1])
-    icp = ICP(ncs, epsilons, labels)
+    icp = ICP(ncs, epsilons)
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
     res = icp.score(X_test, y_test)
@@ -430,7 +429,7 @@ def oy_neural_net():
     X_train = np.vstack((X_train, X_cal))
     y_train = np.vstack((y_train, y_cal))
     model = compile_model(X.shape[1], y.shape[1])
-    cp = CP(ncs, epsilons, labels)
+    cp = CP(ncs, epsilons)
     cp.train(X_train, y_train)
     res = cp.score(X_test, y_test)
     print(res)
@@ -476,11 +475,10 @@ def oy_knn():
     y_test  = y[-70000:]
 
     epsilons = [0.001, 0.005, 0.01, 0.02, 0.025, 0.05]
-    labels = np.arange(2)
 
-    ncs = NCSKNearestNeighbors(labels, n_neighbors=1)
+    ncs = NCSKNearestNeighbors(n_neighbors=1)
 
-    icp = ICP( ncs, epsilons, labels
+    icp = ICP( ncs, epsilons
              , mondrian_taxonomy = mondrian_each_label )
     icp.train(X_train, y_train)
     icp.calibrate(X_cal, y_cal)
@@ -488,6 +486,7 @@ def oy_knn():
     print(res)
 # }}}
 
+# meta {{{
 def meta():
     X, y = load_usps_random()
 
@@ -510,8 +509,8 @@ def meta():
     B_train   = lambda X, y: B.fit(X, y)
     B_predict = lambda X: B.predict(X)
 
-    ncs = NCSKNearestNeighbors(np.arange(2), n_neighbors=1)
-    M   = ICP(ncs, [], np.arange(2))
+    ncs = NCSKNearestNeighbors(n_neighbors=1)
+    M   = ICP(ncs, [])
 
     def M_train(X, y):
         split = int(X.shape[0] / 5)
@@ -528,25 +527,27 @@ def meta():
     M_predict = lambda X: M.p_vals(X)
 
     epsilons = [0.01, 0.02, 0.025, 0.03]
-    labels = np.arange(10)
 
     clf = Meta( M_train, M_predict, B_train, B_predict
-              , epsilons, labels )
+              , epsilons )
 
     clf.train(X_train, y_train, k_folds = 10, plot = False)
     res = clf.score(X_test, y_test)
     print(res)
+# }}}
 
 def main():
     #oy_knn()
     #oy_neural_net()
     #oy_venn()
+
     #venn()
     #knn_regression()
     #usps_nc1nn()
+    meta()
+
     #knn()
     #neural_net()
-    meta()
     #descision_tree()
 
 if __name__ == '__main__':

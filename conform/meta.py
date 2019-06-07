@@ -13,14 +13,13 @@ from . import util
 
 class Meta:
     def __init__( self, M_train, M_predict, B_train
-                , B_predict, epsilons, labels ):
+                , B_predict, epsilons ):
         self.M_train         = M_train
         self.M_predict       = M_predict
         self.B_train         = B_train
         self.B_predict       = B_predict
         self.epsilons        = epsilons
         self.epsilons_invert = [1 - e for e in epsilons]
-        self.labels          = labels
         self.Ts              = [inf for _ in epsilons]
 
     def train(self, X, y, k_folds, plot = False):

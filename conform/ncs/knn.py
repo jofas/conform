@@ -7,20 +7,30 @@ from sklearn.neighbors import NearestNeighbors as NN
 from .base import NCSBase, NCSBaseRegressor
 
 class NCSKNearestNeighbors(NCSBase):
-    def __init__(self, labels, **sklearn):
+    def __init__(self, **sklearn):
         self.n =  5 if "n_neighbors" not in sklearn \
             else sklearn["n_neighbors"]
+
+        self.sk_param = sklearn
 
         # cp: ignore first nn, icp: ignore last nn
         self.n += 1
 
-        self.clfs = {k: _LabelNN(self.n, k, **sklearn) \
-            for k in labels}
+        self.clfs = {}
 
     def train(self, X, y):
-        split = {k: np.array([]) for k in self.clfs}
+        split = {}
 
         for x_, y_ in zip(X, y):
+
+            if y_ not in self.clfs:
+                self.clfs[y_] = _LabelNN(
+                    self.n, y_, **self.sk_param
+                )
+
+            if y_ not in split:
+                split[y_] = np.array([])
+
             if split[y_].shape[0] == 0:
                 split[y_] = x_.reshape(1,-1)
             else:
