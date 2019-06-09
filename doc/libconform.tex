@@ -1,7 +1,6 @@
 \documentclass[twoside,11pt]{article}
 \usepackage{jmlr2e}
 \usepackage{amsmath}
-\usepackage{fontawesome}
 \usepackage[page]{appendix}
 \usepackage{xcolor}
 \usepackage[marginparsep=30pt]{geometry}
@@ -12,8 +11,6 @@
 
 \def\version{\texttt{v0.1.0}}
 \def\libconform{\texttt{libconform}}
-\def\info{\textcolor{blue}{\faInfo}}
-\def\alert{\textcolor{red}{\faExclamation}}
 
 \title{\libconform{} \version: a Python library for
        conformal prediction}
@@ -88,16 +85,14 @@ source code can be downloaded from
 
 This paper combines \libconform{}'s documentation with a
 outline of the implemented algorithms.
-Paragraphs marked with \info{} contain general information
-about the library and descriptions of the
-internal workings, while paragraphs marked
-with \alert{} describe changes in future versions.
+At the end of each chapter there are notes on the
+implementation containing general information about the
+library, descriptions of the internal workings and the API
+and possible changes in future versions.
 
 Appendix~\ref{appendix:a} provides an overview over
 \libconform's API and Appendix~\ref{appendix:b} contains
 examples on how to use the library.
-
-%\marginnote{\info{}}[2.7em]
 
 \section{Conformal predictors}
 
@@ -106,12 +101,19 @@ outline conformal prediction (CP). For more details see
 \citet{alrw}.
 
 CP---like the name suggests---determines the label(s) of an
-incoming observation based on how well it conforms with
-previous observed examples.
+incoming observation based on how well it/they conform(s)
+with previous observed examples. Conformal prediction can
+be used either in the online or the offline, or batch
+learning setting.
+The offline learning setting, compared to online learning,
+weakens the validity---described below in this chapter---of
+the classifier in favor of computational efficiency
+\citep[see][Chapter 3]{alrw}.
+
 Let $\Lbag z_1,\dots,z_n \Rbag$ be a bag, also called
 multiset%
 \footnote{It is typical in machine learning to denote this
-as the training set, even though examples do not have to
+as a data set, even though examples do not have to
 be unique, making the so called set a multiset. A multiset
 is not a list, since the ordering of the elements is not
 important.},
@@ -121,17 +123,17 @@ tuple $(x_i,y_i); x_i \in \textbf{X}, y_i \in \textbf{Y}$.
 the label space. For this time \textbf{Y} is considered
 finite, making the task of prediction a classification
 task, rather than regression, which will be considered in
-chapter~\ref{subsec:rrcm}.
+Chapter~\ref{subsec:rrcm}.
 
 A conformal predictor can be defined as a confidence
 predictor $\Gamma$. For this an input $\epsilon \in (0,1)$,
 the significance level is needed. $1 - \epsilon$ is called
-the confidence level. A conformal predictor
-$\Gamma^\epsilon$ is conservatively valid under the
-exchangeability assumption, which means, as long as
-exchangeability holds, it makes errors at
-a frequency of $\epsilon$ or less. For more on that refer
-to \citet[][chapters 1,2,7]{alrw}.
+the confidence level.
+A conformal predictor $\Gamma^\epsilon$ in the online
+setting is conservatively valid under the exchangeability
+assumption, which means, as long as exchangeability holds,
+it makes errors at a frequency of $\epsilon$ or less. For
+more on that refer to \citet[][Chapters 1,2,7]{alrw}.
 
 CP, in its original setting, produces nested prediction
 sets. Rather than returning a single label as its
@@ -142,7 +144,7 @@ empty set.
 The prediction sets are called nested, because, for
 $\epsilon_1 \geq \epsilon_2$, the prediction of
 $\Gamma^{\epsilon_1}$ is a subset of $\Gamma^{\epsilon_2}$
-\citep[see][chapter 2]{alrw}.
+\citep[see][Chapter 2]{alrw}.
 
 In order to predict the label of a new observation
 $x_{n+1}$, set $z_{n+1}:=(x_{n+1}, y)$, for each
@@ -169,7 +171,7 @@ $A_{n+1}:\textbf{Z}^{n+1} \times \textbf{Z} \rightarrow
 \label{eq:a1}
 \end{align}
 Which one is preferable is case-dependent
-\citep[see][chapter 4.2.2]{shafer_et_al_2008}.
+\citep[see][Chapter 4.2.2]{shafer_et_al_2008}.
 
 $\alpha_i$ is called nonconformity score.
 The nonconformity score can now be used to compute the
@@ -193,14 +195,16 @@ $\tau_{n+1}$:
 \end{align}
 A conformal predictor using the smoothed p-value is called
 a smoothed conformal predictor and is exactly valid under
-exchangeability, which means it makes errors at a rate
-exactly $\epsilon$ \citep[see][chapter 2]{alrw}.
+exchangeability in the online setting, which means it makes
+errors at a rate exactly $\epsilon$
+\citep[see][Chapter 2]{alrw}.
 If the p-value of $z_{n+1}$ is larger than $\epsilon$, $y$
 is added to the prediction set.
 
 \begin{algorithm}
   \caption{: Conformal predictor $\Gamma^\epsilon
     (\Lbag z_1,\dots,z_n \Rbag, x_{n+1})$}
+  \label{alg:cp}
 
   \begin{algorithmic}[1]
     \FORALL{$y \in \textbf{Y}$}
@@ -219,12 +223,85 @@ is added to the prediction set.
   \end{algorithmic}
 \end{algorithm}
 
-% Transductive online
+\noindent
+\textbf{Notes on the implementation:}
+\libconform{} provides the \texttt{CP} class for creating
+conformal prediction classifiers. \libconform{}'s
+classifier classes provide quite equal APIs, only with
+minor variations.
+The API of the classifier classes is comparable to major
+machine learning libraries like sklearn or keras
+\citep[see][]{sklearn_api, keras}.
 
-% INFO on how implemented
+It is common in machine learning to split the learning task
+in two distinct operations, first a
+training---or fit---operation on a training set of examples
+and then a predict operation on new observations.
+\libconform{}'s classifier classes follow this style,
+providing a \texttt{train} and a \texttt{predict} method.
+
+While this split in training and predicting is common for
+inductive classifiers, which first derive a prediction
+rule, or decision surface, from the training set and then
+predict unseen examples inductively based on that rule,
+it is not really the way CP works. CP was designed to be
+transductive, not inductive, which means rather than
+to generate a prediction rule, it uses all previous seen
+examples to classify a new observation, making the training
+step unnecessary (see Algorithm~\ref{alg:cp}).
+While the transductive setting is more elegant than the
+inductive setting, it is computationally very expensive and
+not feasible for larger data sets and for underlying
+algorithms---discussed in Chapter~\ref{subsec:ncs}---which
+have a computationally complex training phase
+\citep[see][Chapter 1]{papadopoulos_et_al_2007,alrw}.
+
+\libconform{}'s aim is to be---one day---ready for
+production, where, for some application domains, the time
+complexity of predicting a new observation is crucial.
+Therefore \libconform{}'s \texttt{CP} class tries to
+minimize the time complexity of its \texttt{predict}
+method. Instead of adding $z_{n+1}$ to the bag and then
+computing $\alpha_i$ for each example in the bag during
+prediction, it computes $\alpha_1,\dots,\alpha_n$ during
+training and only computes $\alpha_{n+1}$ in
+\texttt{predict} (see Algorithm~\ref{alg:cp}, lines 3-5).
+
+Arguably \texttt{CP} does not implement the conformal
+prediction algorithm in its original form, being currently
+rather a special case of inductive conformal prediction,
+where the calibration set is equal to the whole bag of
+examples previously witnessed, instead of a subset (see
+Chapter~\ref{sec:icp}).
+It is possible that \texttt{CP} will change to being the
+implementation of the original conformal prediction
+algorithm described in \citet[][Chapter 2]{alrw} in a
+future version.
+
+\texttt{CP} takes an instance of a nonconformity measure
+$A$ and a sequence of $\epsilon_1,\dots,\epsilon_{g}$
+as its arguments during initialization, therefore being the
+implementation of
+$\Gamma^{\epsilon_1},\dots,\Gamma^{\epsilon_g}$.
+
+It also provides to extra utility methods for validation,
+\texttt{score} and \texttt{score\_online}, which generate
+metrics for the conformal predictors
+$\Gamma^{\epsilon_1},\dots,\Gamma^{\epsilon_g}$.
+The most important of those metrics are the error rates
+$Err_1,\dots,Err_{g}$.
+It the error rate $Err_i \leq \epsilon_i$ over the bag of
+examples provided to \texttt{score}/\texttt{score\_online}
+than $\Gamma^{\epsilon_i}$ was valid on the bag.
+
+\texttt{score\_online} adds an example, after it was
+predicted, to the training bag and calls \texttt{train},
+using $\Gamma^{\epsilon_1},\dots,\Gamma^{\epsilon_g}$ in
+the online learning setting.
 
 \subsection{Nonconformity measures based on underlying
             algorithms}
+\label{subsec:ncs}
 
 % D(x)
 
@@ -235,6 +312,7 @@ is added to the prediction set.
 \label{subsec:rrcm}
 
 \section{Inductive conformal predictors}
+\label{sec:icp}
 
 \section{Mondrian (inductive) conformal predictors}
 
