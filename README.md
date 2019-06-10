@@ -12,10 +12,6 @@
 
 - ACP
 
-- nicer labels API (labels map?)
-
-- Meta: nice ROC plot -> flag for train
-
 - IRRCM
 
 - alternative output for RRCM (interval width)

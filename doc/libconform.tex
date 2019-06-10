@@ -4,7 +4,6 @@
 \usepackage[page]{appendix}
 \usepackage{xcolor}
 \usepackage[marginparsep=30pt]{geometry}
-\usepackage{marginnote}
 \usepackage{stmaryrd}
 \usepackage{algorithm}
 \usepackage{algorithmic}
@@ -61,7 +60,7 @@ stated otherwise.
 The conformal prediction framework is applied successfully
 in many real-world domains, for example face recognition,
 medical diagnostic and prognostic and network traffic
-classification \citep[see][part 3]{cprml}.
+classification \citep[see][Part 3]{cprml}.
 
 It is build on traditional machine learning algorithms, the
 so called underlying algorithms
@@ -108,7 +107,7 @@ learning setting.
 The offline learning setting, compared to online learning,
 weakens the validity---described below in this chapter---of
 the classifier in favor of computational efficiency
-\citep[see][Chapter 3]{alrw}.
+\citep[see][Chapter 4]{alrw}.
 
 Let $\Lbag z_1,\dots,z_n \Rbag$ be a bag, also called
 multiset%
@@ -133,7 +132,7 @@ A conformal predictor $\Gamma^\epsilon$ in the online
 setting is conservatively valid under the exchangeability
 assumption, which means, as long as exchangeability holds,
 it makes errors at a frequency of $\epsilon$ or less. For
-more on that refer to \citet[][Chapters 1,2,7]{alrw}.
+more on that refer to \citet[][Chapters 1--4,7]{alrw}.
 
 CP, in its original setting, produces nested prediction
 sets. Rather than returning a single label as its
@@ -190,9 +189,10 @@ $\tau_{n+1}$:
 \begin{align}
   \frac{|\{i=1,\dots,n+1: \alpha_i > \alpha_{n+1}\}|
     + \tau_{n+1} |\{i=1,\dots,n+1:\alpha_i=\alpha_{n+1}\}|}
-       {n + 1}
+       {n + 1}.
 \label{eq:p1}
 \end{align}
+
 A conformal predictor using the smoothed p-value is called
 a smoothed conformal predictor and is exactly valid under
 exchangeability in the online setting, which means it makes
@@ -222,6 +222,7 @@ is added to the prediction set.
     \RETURN{prediction set}
   \end{algorithmic}
 \end{algorithm}
+\textcolor{white}{bad workaround}\\
 
 \noindent
 \textbf{Notes on the implementation:}
@@ -258,14 +259,19 @@ have a computationally complex training phase
 
 \libconform{}'s aim is to be---one day---ready for
 production, where, for some application domains, the time
-complexity of predicting a new observation is crucial.
+complexity of predicting a new observation is crucial,
+while the time complexity of the training phase
+is---in a certain range---not as important.
 Therefore \libconform{}'s \texttt{CP} class tries to
 minimize the time complexity of its \texttt{predict}
 method. Instead of adding $z_{n+1}$ to the bag and then
 computing $\alpha_i$ for each example in the bag during
 prediction, it computes $\alpha_1,\dots,\alpha_n$ during
 training and only computes $\alpha_{n+1}$ in
-\texttt{predict} (see Algorithm~\ref{alg:cp}, lines 3-5).
+\texttt{predict} (see Algorithm~\ref{alg:cp}, lines 3--5).
+Therefore---not adding $z_{n+1}$ to the bag---it
+currently computes the nonconformity scores based on
+$A_n$ instead of $A_{n+1}$.
 
 Arguably \texttt{CP} does not implement the conformal
 prediction algorithm in its original form, being currently
@@ -276,7 +282,9 @@ Chapter~\ref{sec:icp}).
 It is possible that \texttt{CP} will change to being the
 implementation of the original conformal prediction
 algorithm described in \citet[][Chapter 2]{alrw} in a
-future version.
+future version, or simply providing an extra method for the
+computationally more demanding original online learning
+setting defined in \citet[][Chapter 2]{alrw}.
 
 \texttt{CP} takes an instance of a nonconformity measure
 $A$ and a sequence of $\epsilon_1,\dots,\epsilon_{g}$
@@ -303,13 +311,266 @@ the online learning setting.
             algorithms}
 \label{subsec:ncs}
 
-% D(x)
+Previously nonconformity measures were only described as
+any function
+$A: \textbf{Z}^* \times \textbf{Z} \rightarrow \mathbb{R}$,
+$\textbf{Z}^*$ being any possible bag of examples from
+$\textbf{Z}$. This chapter will make a more concrete
+description on what nonconformity measures are and how they
+use underlying traditional machine learning algorithms.
 
-% here info on how NCScores impl in libconform
+Let $D:\textbf{Z}^* \times \textbf{X} \rightarrow
+\hat{\textbf{Y}}$ be a traditional machine learning
+algorithm. $\hat{\textbf{Y}}$ must not be equal to
+$\textbf{Y}$. Furthermore there exists a discrepancy
+measure $\Delta: \textbf{Y} \times \hat{\textbf{Y}}
+\rightarrow \mathbb{R}$.
+For a concrete bag $\Lbag z_1,\dots,z_n \Rbag$,
+$D_{\Lbag z_1,\dots,z_n \Rbag}$ would be the instance of
+$D$ trained on the bag, generating a decision surface based
+on it. $D_{\Lbag z_1,\dots,z_n \Rbag}(x)$ would return the
+label $\hat{y}$ for $x$. Now we can define the
+nonconformity score $\alpha$ for $z := (x, y)$ from the
+nonconformity measure $A_n$ as:
+\begin{align*}
+  \alpha=A_n(\Lbag z_1,\dots,z_n \Rbag, z)=
+  \Delta\big(y,D_{\Lbag z_1,\dots,z_n \Rbag}(x)\big),
+\end{align*}
+or rather with removed example for any $\alpha_i$,
+$i = 1,\dots,n$:
+\begin{align*}
+  \alpha_i = A_n(\Lbag z_1,\dots,z_{i-1},z_{i+1},\dots,z_n
+  \Rbag, z_i) = \Delta\big(y,D_{\Lbag z_1,\dots,z_{i-1},
+  z_{i+1},\dots,z_n \Rbag}(x_i)\big).
+\end{align*}
+
+Especially the second equation can be computationally very
+complex since it requires to refit $D$ for each
+$i = 1,\dots,n$. In general it is not very natural to
+use a inductive decision surface $D$ within the
+transductive framework of CP.
+
+A popular nonconformity measure is based on the nearest
+neighbor method \citep[see][]{alrw,shafer_et_al_2008,cprml,
+  smirnov_et_al_2009}.
+The general description for the $k$-nearest neighbor method
+can be found in \citet{smirnov_et_al_2009}, the other
+articles/books describe the nonconformity measure based on
+the 1-nearest neighbor method for $z:=(x,y)$ as:
+\begin{align*}
+  A_n(\Lbag z_1,\dots,z_n \Rbag, z) =
+  \frac{\text{min}_{i=1,\dots,n:y_i = y} d(x,x_i)}
+       {\text{min}_{i=1,\dots,n:y_i \neq y} d(x,x_i)},
+\end{align*}
+$d$ being a distance measure, for example the Euclidean
+distance. It should be noted that $A_n$ based on the
+1-nearest neighbor method for
+$A_n(\Lbag z_1,\dots,z_n \Rbag, z_i), i=1,\dots,n$ requires
+the removal of $z_i$ from the bag, since otherwise the
+smallest distance for $y_i = y_j,j=1,\dots,n$ would always
+be 0 resulting in worthless nonconformity scores.
+
+The more general nonconformity measure based on the
+$k$-nearest neighbor method can be described as:
+\begin{align*}
+  A_n(\Lbag z_1,\dots,z_n \Rbag, z)=\frac{d_k^y}{d_k^{-y}},
+\end{align*}
+$d_k$ being the sum of the $k$ smallest distances to $x$,
+$-y$ being all the examples where
+$y \neq y_i, i = 1,\dots,n$.
+\\\\
+
+\noindent
+\textbf{Notes on the implementation:}
+\libconform{} tries again to be as extensible as possible,
+providing a way for developers to define their own
+nonconformity measures. For nonconformity measures
+\libconform{} provides a module \texttt{ncs} containing
+predefined nonconformity measures and a base class for
+inheritance called \texttt{NCSBase}.
+
+Predefined are currently the $k$-nearest neighbor method,
+one based on a decision tree \citep[see][Chapter 4]{alrw}
+and one based on neural networks
+\citep[see][Chapter 4]{papadopoulos_et_al_2007,alrw}.
+The $k$-nearest neighbor method and the decision tree
+are based on the sklearn library
+\citep[see][]{sklearn_api}.
+
+Nonconformity measures are classes inheriting from
+\texttt{NCSBase} and have to provide an interface with
+three methods: \texttt{train}, \texttt{scores} and
+\texttt{score}.
+
+\texttt{train}$: \textbf{X}^n \times \textbf{Y}^n$ is for
+fitting the underlying algorithm $D$ to a bag of examples.
+
+\texttt{scores}$: \textbf{X}^m \times \textbf{Y}^m \times
+bool \rightarrow \mathbb{R}^m$ returning the scores for a
+bag of examples. The $bool$ value provided as a parameter
+tells the nonconformity measure if the bag is equal to the
+bag provided to \texttt{train}, making it possible to
+implement (\ref{eq:a0}), rather than (\ref{eq:a1}).
+The CP-implementation passes the same bag to \texttt{train}
+and \texttt{scores}, while the inductive conformal
+prediction implementation (see Chapter~\ref{sec:icp})
+passes another bag---the so called calibration set---as a
+parameter to \texttt{scores}.
+
+\texttt{score}$: \textbf{X} \times
+\textbf{Y}^{|\textbf{Y}|} \rightarrow
+\mathbb{R}^{|\textbf{Y}|}$ is for returning the scores of
+an example $x$ and each $y \in \textbf{Y}$ combined as
+$z := (x, y)$.
 
 \subsection{Conformal predictor for regression: ridge
             regression confidence machine}
 \label{subsec:rrcm}
+
+The ridge regression confidence machine algorithm is
+described in
+\citet[Chapter 2.3]{nouretdinov_et_al_2001, alrw}.
+In this chapter, unlike in the previous and following
+chapters, $\textbf{Y}$ will be $\mathbb{R}$, making the
+prediction a regression problem instead of classification.
+
+Algorithm~\ref{alg:cp} is not feasible for regression,
+since $\textbf{Y}$ is now infinite and we would need to
+test for each $y \in \textbf{Y}$ if it is in the prediction
+set or not. Instead the ridge regression confidence machine
+(RRCM) algorithm offers a different approach, returning
+prediction intervals instead of prediction sets.
+
+Even though RRCM has ridge regression in its name, it can
+be used with other underlying algorithms, like nearest
+neighbor regression. For more on ridge regression and its
+special case linear regression refer to e.g.
+\citet[Chapter 3]{elem_stat}.
+
+Let $\Lbag z_1,\dots,z_n \Rbag$ be our bag of examples,
+let $z_{n+1} := (x_{n+1}, y)$ be the observation we want to
+predict and let $D_{\Lbag z_1,\dots,z_{n+1} \Rbag}$ be an
+underlying regression algorithm.
+Previously nonconformity scores were treated as constants,
+now we treat them as functions, since $y$ is now an unknown
+variable: $\alpha_i(y) = |a_i + b_i y|, i=1,\dots,n+1$.
+$a_i$ and $b_i$ are provided by the underlying regression
+algorithm. Each $b_i$ is always positive, if not $a_i$ and
+$b_i$ are multiplied with $-1$.
+
+Now we can compute the set of $y$'s which p-values are
+exceeding a significance level $\epsilon$.
+Let $S_i = \{y: |a_i + b_i y| \geq |a_{n+1} + b_{n+1} y|\},
+i=1,\dots,n$. Each $S_i$ looks like:
+\begin{align*}
+S_i =
+  \begin{cases}
+    [u_i,v_i]
+      &\quad \text{if } b_{n+1} > b_i
+      \\
+    (-\infty, u_i] \cup [v_i, \infty)
+      &\quad \text{if } b_{n+1} < b_i
+      \\
+    [u_i, \infty)
+      &\quad \text{if } b_{n+1} = b_i > 0
+      \text{ and } a_{n+1} < a_i
+      \\
+    (-\infty, u_i]
+      &\quad \text{if } b_{n+1} = b_i > 0
+      \text{ and } a_{n+1} > a_i
+      \\
+    \mathbb{R}
+      &\quad \text{if } b_{n+1} = b_i = 0
+      \text{ and } |a_{n+1}| \leq |a_i|
+      \\
+    \emptyset
+      &\quad \text{if } b_{n+1} = b_i = 0
+      \text{ and } |a_{n+1}| > |a_i|
+  \end{cases},
+\end{align*}
+so each $S_i$ is either an interval, a point (a special
+interval), the union of two rays, a ray, the real line or
+empty.
+$u_i$ and $v_i$ are either the minimum/maximum of
+$-\frac{a_i - a_{n+1}}{b_i - b_{n+1}}$ and
+$-\frac{a_i + a_{n+1}}{b_i + b_{n+1}}$,
+if $b_{n+1} \neq b_{i}$ or
+$u_i = v_i = -\frac{a_i + a_n}{2b_i}$, if
+$b_{n+1} = b_i > 0$
+The p-value can only change at $u_i$'s or $v_i$'s.
+Therefore all $u_i$'s and $v_i$'s are sorted in ascending
+order generating the sequence $s_1,\dots,s_m$ plus two more
+$s$-values, $s_0=-\infty$, $s_{m+1}=\infty$.
+The p-value is constant on any interval
+$(s_i,s_{i+1}),i=0,\dots,m$ from the sorted set
+\citep[see][]{nouretdinov_et_al_2001}.
+
+After that $N$ and $M$ are computed from the sequence.
+$N_j, j=0,\dots,m$ for the interval $(s_j,s_{j+1})$ is the
+count of $S_i: (s_j,s_{j+1}) \subseteq S_i, i=1,\dots,n$.
+$M_j, j=1,\dots,m$, on the other hand does the same count
+only for single $s_j$'s: $S_i: s_j \in S_i, i=1,\dots,n$.
+
+For a given significance level $\epsilon$ the prediction
+interval is the union of intervals from $N$ and points from
+$M$ for which $\frac{N_j}{n+1} > \epsilon$ or
+$\frac{M_j}{n+1} > \epsilon$, respectively
+\citep[see][Chapter 2.3]{alrw}.
+\\\\
+
+\noindent
+\textbf{Notes on the implementation:}
+The ridge regression confidence machine is implemented as
+a class \texttt{RRCM}. It provides the same API as
+\texttt{CP}. It implements a computationally less complex
+prediction method than the one described above. While the
+RRCM described above runs at $\mathcal{O}(n^2)$,
+\texttt{RRCM} takes only $\mathcal{O}(n \log n)$, because it
+does not compute $N$ and $M$ directly but instead
+\begin{align*}
+N_{j}^\prime =
+  \begin{cases}
+    N_j - N_{j-1} &\quad \text{if } j=0,\dots,m \\
+    0             &\quad \text{if } j=-1
+  \end{cases}
+\end{align*}
+and
+\begin{align*}
+M_{j}^\prime =
+  \begin{cases}
+    M_j - M_{j-1} &\quad \text{if } j=1,\dots,m \\
+    0             &\quad \text{if } j=0
+  \end{cases},
+\end{align*}
+which takes only $\mathcal{O}(n)$, making the sorting the
+$u_i$'s and $v_i$'s the most complex task
+\citep[see][Chapter 2.3]{alrw}.
+
+\texttt{RRCM} is based on underlying regression algorithms
+providing it with its $a_i$'s and $b_i$'s. Currently the
+library provides one of these regression algorithms, based
+on the $k$-nearest neighbor method. For $b_i, i=1,\dots,n$
+it returns 0, for $b_{n+1}$ it returns 1. $a_i$ is the
+difference between $y_i$ and the average of the labels of
+its $k$-nearest neighbors. $y_{n+1}$ is set to 0 therefore
+the $k$-nearest neighbor method returns the negated average
+of the labels of the $k$-nearest neighbors of $x_{n+1}$ as
+$a_{n+1}$.
+
+For developing underlying regression scorers there exists
+a base class for inheritance called
+\texttt{NCSBaseRegressor}.
+It provides a comparable API to \texttt{NCSBase}---the
+base class for nonconformity measures---described
+in the previous chapter.
+Like \texttt{NCSBase} the API contains a \texttt{train}
+method for training the underlying algorithm.
+Instead of \texttt{scores} and \texttt{score} it has
+\texttt{coeffs} and \texttt{coeffs\_n}. The first returns
+for a bag two vectors of coefficients $a_i$ and $b_i$ for
+each element in the bag. \texttt{coeffs\_n} returns
+the coefficients for the observation that needs to be
+predicted, in this chapter $z_{n+1} := (x_{n+1},y)$.
 
 \section{Inductive conformal predictors}
 \label{sec:icp}
