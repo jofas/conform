@@ -36,7 +36,7 @@
 This paper introduces the Python library \libconform,
 implementing concepts defined in \citet{alrw}, namely the
 conformal prediction framework and Venn prediction for
-reliable machine learning.
+reliable machine learning and predicting with certainty.
 These algorithms address a weakness of more traditional
 machine learning algorithms which produce only bare
 predictions, without their confidence in them/the
@@ -45,7 +45,7 @@ measure of likelihood, desirable and even necessary in many
 real-world application domains.
 
 The conformal prediction framework is composed of
-variations of the conformal prediction algorithm (CP),
+variations of the conformal prediction algorithm,
 first described in
 \citet{vovk_et_al_1999, saunders_et_al_1999}.
 A conformal predictor provides a measurement of confidence
@@ -82,7 +82,7 @@ The library is licensed under the MIT-license and its
 source code can be downloaded from
 \url{https://github.com/jofas/conform}.
 
-This paper combines \libconform{}'s documentation with a
+This paper combines \libconform{}'s documentation with an
 outline of the implemented algorithms.
 At the end of each chapter there are notes on the
 implementation containing general information about the
@@ -102,12 +102,12 @@ outline conformal prediction (CP). For more details see
 CP---like the name suggests---determines the label(s) of an
 incoming observation based on how well it/they conform(s)
 with previous observed examples. Conformal prediction can
-be used either in the online or the offline, or batch
-learning setting.
+be used either in the online or the offline---or
+batch---learning setting.
 The offline learning setting, compared to online learning,
-weakens the validity---described below in this chapter---of
-the classifier in favor of computational efficiency
-\citep[see][Chapter 4]{alrw}.
+weakens the validity and efficiency---described below in
+this chapter---of the classifier in favor of computational
+efficiency \citep[see][Chapter 4]{alrw}.
 
 Let $\Lbag z_1,\dots,z_n \Rbag$ be a bag, also called
 multiset%
@@ -132,18 +132,21 @@ A conformal predictor $\Gamma^\epsilon$ in the online
 setting is conservatively valid under the exchangeability
 assumption, which means, as long as exchangeability holds,
 it makes errors at a frequency of $\epsilon$ or less. For
-more on that refer to \citet[][Chapters 1--4,7]{alrw}.
+more on that refer to \citet[][Chapters 1--4, 7]{alrw}.
 
 CP, in its original setting, produces nested prediction
 sets. Rather than returning a single label as its
 prediction, it returns a set of elements
-$\textbf{Y}^\prime \in 2^{\textbf{Y}}$, $2^{\textbf{Y}}$
+$\textbf{Y}^\prime \in 2^{\textbf{Y}}$; $2^{\textbf{Y}}$
 being the set of all subsets of $\textbf{Y}$, including the
 empty set.
 The prediction sets are called nested, because, for
-$\epsilon_1 \geq \epsilon_2$, the prediction of
+$\epsilon_1 \geq \epsilon_2$, the prediction set of
 $\Gamma^{\epsilon_1}$ is a subset of $\Gamma^{\epsilon_2}$
 \citep[see][Chapter 2]{alrw}.
+
+The efficiency of a classifier is the frequency with which
+it classifies new observations with a single label.
 
 In order to predict the label of a new observation
 $x_{n+1}$, set $z_{n+1}:=(x_{n+1}, y)$, for each
@@ -236,14 +239,14 @@ machine learning libraries like sklearn or keras
 
 It is common in machine learning to split the learning task
 in two distinct operations, first a
-training---or fit---operation on a training set of examples
+training---or fit---operation on a bag of examples
 and then a predict operation on new observations.
 \libconform{}'s classifier classes follow this style,
 providing a \texttt{train} and a \texttt{predict} method.
 
 While this split in training and predicting is common for
 inductive classifiers, which first derive a prediction
-rule, or decision surface, from the training set and then
+rule, or decision surface, from the training bag and then
 predict unseen examples inductively based on that rule,
 it is not really the way CP works. CP was designed to be
 transductive, not inductive, which means rather than
@@ -252,7 +255,7 @@ examples to classify a new observation, making the training
 step unnecessary (see Algorithm~\ref{alg:cp}).
 While the transductive setting is more elegant than the
 inductive setting, it is computationally very expensive and
-not feasible for larger data sets and for underlying
+not feasible for larger bags of examples and for underlying
 algorithms---discussed in Chapter~\ref{subsec:ncs}---which
 have a computationally complex training phase
 \citep[see][Chapter 1]{papadopoulos_et_al_2007,alrw}.
@@ -307,6 +310,16 @@ predicted, to the training bag and calls \texttt{train},
 using $\Gamma^{\epsilon_1},\dots,\Gamma^{\epsilon_g}$ in
 the online learning setting.
 
+\texttt{CP} also provides a method for another setting of
+conformal prediction, this one not based on a significance
+level $\epsilon$: \texttt{predict\_best}.
+\texttt{predict\_best} always returns a single label, the
+one with the highest p-value and optionally also its
+significance level. The significance level is the second
+highest p-value, since a label is added to the prediction
+set---in the original setting---if its p-value is greater
+than $\epsilon$ \citep[see][]{papadopoulos_et_al_2007}.
+
 \subsection{Nonconformity measures based on underlying
             algorithms}
 \label{subsec:ncs}
@@ -340,7 +353,7 @@ or rather with removed example for any $\alpha_i$,
 $i = 1,\dots,n$:
 \begin{align*}
   \alpha_i = A_n(\Lbag z_1,\dots,z_{i-1},z_{i+1},\dots,z_n
-  \Rbag, z_i) = \Delta\big(y,D_{\Lbag z_1,\dots,z_{i-1},
+  \Rbag, z_i) = \Delta\big(y_i,D_{\Lbag z_1,\dots,z_{i-1},
   z_{i+1},\dots,z_n \Rbag}(x_i)\big).
 \end{align*}
 
@@ -497,8 +510,8 @@ $-\frac{a_i + a_{n+1}}{b_i + b_{n+1}}$,
 if $b_{n+1} \neq b_{i}$ or
 $u_i = v_i = -\frac{a_i + a_n}{2b_i}$, if
 $b_{n+1} = b_i > 0$
-The p-value can only change at $u_i$'s or $v_i$'s.
-Therefore all $u_i$'s and $v_i$'s are sorted in ascending
+The p-value can only change at $u_i$ or $v_i$.
+Therefore all $u_i$ and $v_i$ are sorted in ascending
 order generating the sequence $s_1,\dots,s_m$ plus two more
 $s$-values, $s_0=-\infty$, $s_{m+1}=\infty$.
 The p-value is constant on any interval
@@ -508,14 +521,25 @@ $(s_i,s_{i+1}),i=0,\dots,m$ from the sorted set
 After that $N$ and $M$ are computed from the sequence.
 $N_j, j=0,\dots,m$ for the interval $(s_j,s_{j+1})$ is the
 count of $S_i: (s_j,s_{j+1}) \subseteq S_i, i=1,\dots,n$.
-$M_j, j=1,\dots,m$, on the other hand does the same count
-only for single $s_j$'s: $S_i: s_j \in S_i, i=1,\dots,n$.
+$M_j, j=1,\dots,m$, on the other hand, does the same count
+only for single $s_j$: $S_i: s_j \in S_i, i=1,\dots,n$.
 
 For a given significance level $\epsilon$ the prediction
 interval is the union of intervals from $N$ and points from
 $M$ for which $\frac{N_j}{n+1} > \epsilon$ or
 $\frac{M_j}{n+1} > \epsilon$, respectively
 \citep[see][Chapter 2.3]{alrw}.
+
+In \citet{nouretdinov_et_al_2001} it is stated that there
+could be holes in the prediction interval, which means the
+the RRCM would return more than a single prediction
+interval.
+According to the authors these holes rarely show in
+empirical tests.
+The authors therefore remark that the RRCM can just remove
+those holes---therefore returning a single interval---by
+simply returning the convex hull of the prediction
+intervals.
 \\\\
 
 \noindent
@@ -546,16 +570,22 @@ which takes only $\mathcal{O}(n)$, making the sorting the
 $u_i$'s and $v_i$'s the most complex task
 \citep[see][Chapter 2.3]{alrw}.
 
+The \texttt{RRCM} implementation takes a flag during
+its initialization for dealing with the holes described
+above, so developers can choose if they want possibly more
+than one prediction interval or the convex hull.
+
 \texttt{RRCM} is based on underlying regression algorithms
-providing it with its $a_i$'s and $b_i$'s. Currently the
+providing it with its $a_i$ and $b_i$. Currently the
 library provides one of these regression algorithms, based
-on the $k$-nearest neighbor method. For $b_i, i=1,\dots,n$
-it returns 0, for $b_{n+1}$ it returns 1. $a_i$ is the
-difference between $y_i$ and the average of the labels of
-its $k$-nearest neighbors. $y_{n+1}$ is set to 0 therefore
-the $k$-nearest neighbor method returns the negated average
-of the labels of the $k$-nearest neighbors of $x_{n+1}$ as
-$a_{n+1}$.
+on the $k$-nearest neighbor method.
+$a_i$ is the difference between $y_i$ and the average of
+the labels of its $k$-nearest neighbors. $y_{n+1}$ is set
+to 0, therefore the $k$-nearest neighbor method returns the
+negated average of the labels of the $k$-nearest neighbors
+of $x_{n+1}$ as $a_{n+1}$.
+For $b_i, i=1,\dots,n$ it returns 0, for $b_{n+1}$ it
+returns 1.
 
 For developing underlying regression scorers there exists
 a base class for inheritance called
@@ -574,6 +604,84 @@ predicted, in this chapter $z_{n+1} := (x_{n+1},y)$.
 
 \section{Inductive conformal predictors}
 \label{sec:icp}
+
+Suppose we have an underlying inductive machine learning
+algorithm $D$ as our nonconformity measure and a bag
+$\Lbag z_1,\dots,z_n \Rbag$ of examples. If we want to use
+$D$ as the nonconformity measure we need to fit it to our
+bag: $D_{\Lbag z_1,\dots,z_n \Rbag}$. For some $D$ this can
+be a quite time consuming task and in general is not a very
+aesthetic thing to do in our transductive setting from the
+previous chapter, since---if we would want to predict a
+new observation $x_{n+1}$---we would need to refit $D$ for
+each $y \in \textbf{Y}$, because we compute our
+nonconformity scores adding $z_{n+1} := (x_{n+1},y)$ to
+the bag and refitting $D$ with it
+(see Algorithm~\ref{alg:cp}, lines 2--5).
+Even worse, if we would use (\ref{eq:a0}) instead of
+(\ref{eq:a1}) we would need to refit $D$ for each bag
+$\Lbag z_1,\dots,z_{i-1},z_{i+1},\dots,z_{n+1} \Rbag,
+i=1,\dots,n$.
+
+There exists a natural derivation from the transductive
+setting of conformal prediction to the inductive setting
+called inductive conformal prediction (ICP).
+ICP works more natural with nonconformity measures relying
+on inductive machine learning algorithms as the underlying
+algorithm \citep[see][Chapter 4]{alrw}.
+
+ICP is computationally less complex than CP, to the cost of
+the classifier's validity and efficiency
+\citep[see][Chapter 4]{alrw}.
+
+Suppose, again, we have our bag of examples
+$\Lbag z_1,\dots,z_n \Rbag$. ICP now splits this bag at a
+point $m < n$ into two bags, the so called training set
+$\Lbag z_1,\dots,z_m \Rbag$ and the calibration set
+$\Lbag z_{m+1},\dots,z_n \Rbag$.
+
+With the training set the underlying algorithm is trained
+generating $D_{\Lbag z_1,\dots,z_m \Rbag}$. For each
+example in the calibration set the nonconformity score
+$\alpha_i$ gets computed:
+\begin{align}
+  \label{eq:a_icp}
+  \alpha_i=\Delta(y_i,D_{\Lbag z_1,\dots,z_m \Rbag}(x_i)),
+  i=m+1,\dots,n.
+\end{align}
+
+Now, for an incoming example $x_g, g \in [n+1,\infty)$ set
+$z_{g} := (x_g, y)$ for each $y \in \textbf{Y}$ and compute
+the nonconformity score $\alpha_g$ like (\ref{eq:a_icp}).
+The p-value of $z_{g}$ is:
+\begin{align*}
+  \frac{|\{i = m+1,\dots,n: \alpha_i \geq \alpha_g\}|}
+       {n-m+1}
+\end{align*}
+\citep[see][]{papadopoulos_et_al_2007}. The huge costs of
+fitting $D$ repetitively are now reduced to fitting $D$
+only once. More elaborate update cycles---called teaching
+schedules, where $m$ is changing after certain events---and
+how they impact the validity of the classifier can be found
+in \citet[Chapters 4.3, 4.4]{alrw}.
+\\\\
+
+\noindent
+\textbf{Notes on the implementation:}
+\texttt{ICP} is the class implemention inductive conformal
+prediction. It provides the same API as \texttt{CP},
+except \texttt{score\_online}. It has an additional method
+\texttt{calibrate} for generating the nonconformity scores
+for a the calibration set.
+
+It works with the same nonconformity measures (instances
+of classes inheriting from \texttt{NCSBase}) as does
+\texttt{CP}.
+
+Currently the nonconformity scores from the calibration set
+are saved internally as a vector. In future releases this
+will change to an optimized data structure for searching,
+e.g. a red-black tree.
 
 \section{Mondrian (inductive) conformal predictors}
 
