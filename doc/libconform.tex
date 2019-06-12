@@ -284,10 +284,9 @@ examples previously witnessed, instead of a subset (see
 Chapter~\ref{sec:icp}).
 It is possible that \texttt{CP} will change to being the
 implementation of the original conformal prediction
-algorithm described in \citet[][Chapter 2]{alrw} in a
-future version, or simply providing an extra method for the
-computationally more demanding original online learning
-setting defined in \citet[][Chapter 2]{alrw}.
+algorithm in a future version, or simply providing an extra
+method for the computationally more demanding original
+online learning setting \citet[see][Chapter 2]{alrw}.
 
 \texttt{CP} takes an instance of a nonconformity measure
 $A$ and a sequence of $\epsilon_1,\dots,\epsilon_{g}$
@@ -658,12 +657,14 @@ The p-value of $z_{g}$ is:
   \frac{|\{i = m+1,\dots,n: \alpha_i \geq \alpha_g\}|}
        {n-m+1}
 \end{align*}
-\citep[see][]{papadopoulos_et_al_2007}. The huge costs of
-fitting $D$ repetitively are now reduced to fitting $D$
-only once. More elaborate update cycles---called teaching
-schedules, where $m$ is changing after certain events---and
-how they impact the validity of the classifier can be found
-in \citet[Chapters 4.3, 4.4]{alrw}.
+\citep[see][]{papadopoulos_et_al_2007}.
+
+The huge costs of fitting $D$ repetitively are now reduced
+to fitting $D$ only once.
+More elaborate update cycles---called teaching
+schedules---where $m$ is changing after certain events
+and how they impact the validity of the classifier can be
+found in \citet[Chapters 4.3, 4.4]{alrw}.
 \\\\
 
 \noindent
@@ -681,9 +682,129 @@ of classes inheriting from \texttt{NCSBase}) as does
 Currently the nonconformity scores from the calibration set
 are saved internally as a vector. In future releases this
 will change to an optimized data structure for searching,
-e.g. a red-black tree.
+e.g.\ a red-black tree.
 
-\section{Mondrian (inductive) conformal predictors}
+\section{Mondrian or conditional (inductive) conformal
+         predictors}
+
+The property of validity under the exchangeablity
+assumption can be further optimized with mondrian or
+conditional (inductive) conformal prediction (MCP).
+In \citet[Chapter 4.5]{alrw} this form of conformal
+prediction is called mondrian, in \citet[Chapter 2]{cprml}
+it is called conditional.
+
+An example from \citet[Chapter 4.5]{alrw} makes it clear
+why the stronger form of validity provided by MCP can be
+important for some real-world application domains.
+The authors tested a 1-nearest neighbor based smoothed
+conformal predictor with the significance level
+$\epsilon=0.05$ on the USPS data set.
+The USPS data set contains 9298 images of handwritten
+digits.
+The observations are a $16 \times 16$ matrix where each
+cell is in the interval of $(-1,1)$ and the labels
+obviously are 0 to 9 \citep[see][]{lecun_et_al_1989}.
+They found out, that while overall the validity (the error
+frequency was nearly equal to $\epsilon=0.05$) held, the
+smoothed conformal predictor had an error rate of $11.7\%$
+on examples with the label ``5''.
+The smoothed conformal predictor masked its bad performance
+on examples with the label ``5'' simply by predicting other
+labels with an error rate of less than $\epsilon = 0.05$,
+e.g.\ for the label ``0'' the error rate was below $0.01$
+\citep[see][Chapter 4.5]{alrw}.
+
+The idea of MCP is to partition the examples into a
+discrete and finite set $\textbf{K}$ of categories
+$k_i \in \textbf{K}$ and to achieve conditional validity in
+each category.
+For the partitioning a measurable function called a
+taxonomy is used.
+In \citet[Chapter 4.5]{alrw} the taxonomy is called
+mondrian taxonomy and is defined as:
+\begin{align*}
+  \kappa: \mathbb{N} \times \textbf{Z} \rightarrow
+  \textbf{K},
+\end{align*}
+in \citet[Chapter 2]{cprml} the taxonomy is called a
+$n$-taxonomy:
+\begin{align*}
+  K_n: \textbf{Z}^n \rightarrow \textbf{K}^n.
+\end{align*}
+
+The mondrian taxonomy $\kappa$ takes the index $i$ of an
+example $z_i$ from a sequence $z_1,\dots,z_n$ and $z_i$ as
+its input and maps it to a category while the $n$-taxonomy
+$K_n$ takes a sequence of examples with a size of $n$ and
+maps it to a sequence of categories with size $n$.
+$K_n$ is more flexible than $\kappa$ since it is possible
+to make the decision which category an example from the
+sequence should be in based on the other examples from the
+sequence.
+
+The $K$-conditional p-value for an example $z_{n+1}$ and
+a bag $\Lbag z_1,\dots,z_n \Rbag$ is now defined for
+$i=1,\dots,n+1$ as:
+\begin{align}
+  \label{eq:mp0}
+  \frac{|\{i:K_i = K_{n+1} \text{ \& } \alpha_i
+        \geq \alpha_{n+1}\}|}
+  {|\{i: K_i = K_{n+1}\}|}.
+\end{align}
+The smoothed version would be:
+\begin{align}
+  \label{eq:mp1}
+  \frac{|\{i:K_i = K_{n+1} \text{ \& } \alpha_i >
+        \alpha_{n+1}\}| + \tau_{n+1}
+        |\{i:K_i = K_{n+1} \text{ \& } \alpha_i =
+        \alpha_{n+1}\}|}
+  {|\{i: K_i = K_{n+1}\}|}.
+\end{align}
+
+(\ref{eq:mp0}) and (\ref{eq:mp1}) are the same for $\kappa$
+if $K$ is substituted with $\kappa$.
+
+A MCP classifier is category-wise valid under the
+exchangeability assumption \citep[see][]{alrw, cprml}.
+\\\\
+
+\noindent
+\textbf{Notes on the implementation:}
+There is no direct implementation for MCP, \libconform{}
+rather leverages the fact that CP and ICP are just a
+special form of mondrian (inductive) conformal prediction,
+where $|\textbf{K}| = 1$, which means all examples are in
+the same category.
+\texttt{CP} and \texttt{ICP} can take an argument during
+initialization called \texttt{mondrian\_taxonomy}.
+Currently \texttt{mondrian\_taxonomy} is a function---or
+a Python callable rather---which takes one example as its
+input and returns the category, basically a 1-taxonomy
+$K_1$ where the single example can only be looked at
+without context.
+
+In practice a single example often is more information than
+really needed.
+Often just the label of the example is important, making
+the MCP based on this $\textbf{K}$ a label conditional
+(inductive) conformal predictor
+\citep[see][Chapter 2]{cprml}.
+
+\texttt{mondrian\_taxonomoy} will change in a future
+version to $K_n$ for more flexibility.
+
+\citet[Chapter 4.5]{alrw} defines mondrian nonconformity
+measures
+\begin{align*}
+  A: \textbf{K}^* \times \textbf{Z}^* \times
+  \textbf{K} \times \textbf{Z} \rightarrow \mathbb{R},
+\end{align*}
+which add the category to each example in order to compute
+the nonconformity scores.
+Currently \libconform{} does not have an API for mondrian
+nonconformity measures, which could change in
+future releases.
 
 \section{Probabilistic prediction: Venn predictors}
 
