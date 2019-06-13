@@ -7,6 +7,23 @@
 \usepackage{stmaryrd}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+\usepackage{tikz}
+
+\usetikzlibrary{%
+    arrows,
+    arrows.meta,
+    decorations,
+    backgrounds,
+    positioning,
+    fit,
+    petri,
+    shadows,
+    datavisualization.formats.functions,
+    calc,
+    shapes,
+    shapes.multipart,
+    matrix
+}
 
 \def\version{\texttt{v0.1.0}}
 \def\libconform{\texttt{libconform}}
@@ -915,6 +932,180 @@ are equal---and \libconform{} will provide a new API for
 both together.
 
 \section{Meta-conformal predictors}
+
+For understanding how meta-conformal predictors achieve
+reliability we have to introduce the concept of abstention
+and abstaining classifiers.
+An abstaining classifier uses a measure of uncertainty and
+if the uncertainty of a new observation is too high the
+classifier does not give a prediction, it rejects it
+\citep[see][]{vanderlooy_et_al_2009}.
+
+CP is easily modified to being an abstaining classifier.
+We could simply predict the label with the highest
+p-value and if its significance level (the second highest
+p-value, see Chapter~\ref{sec:cp}) is above a certain
+threshold, the classifier returns the label, otherwise it
+rejects the observation.
+
+Meta-conformal predictors are described in
+\citet{smirnov_et_al_2009}. The authors argue, that if
+there exists a classifier $B$ we would need to construct
+a nonconformity measure based on $B$; not an easy task,
+since there exists no approach for doing so in general.
+
+Therefore they introduce the method of using a conformal
+predictor with an already established nonconformity measure
+$M$ as a meta-classifier in combination with $B$, so we can
+add a certainty measure to a prediction otherwise without
+any likelihood indicator.
+\textit{B:M} is called the combined classifier.
+
+The meta-classifier is a binary classifier that predicts
+new observations based on the meta data of the base
+classifier $B$. The meta data being 0 if $B$'s prediction
+for an observation $x_i$ was wrong, 1 if it was correct.
+
+Metrics for the performance of a binary classifier can
+be given by a confusion matrix (see Figure~\ref{fig:cm}).
+For a test set the confusion matrix counts the predicted
+examples and maps them---depending on the true class and
+the predicted class---to its entries.
+
+\begin{figure}
+\begin{center}
+\begin{tikzpicture}
+  \def\th{1em}
+  \def\tw{4.2cm}
+  \def\tww{1.5cm}
+  \def\twww{1.65cm}
+
+  \node[ rectangle split
+       , rectangle split parts = 3
+       , text width = \tw, text height = \th
+       , draw, label=positive ] (a) at (0,0)
+  {%
+    True Positive ($TP$)
+    \nodepart{two} False Negative ($FN$)
+    \nodepart{three} Rejected Positive ($RP$)
+  };
+
+  \node[ right=0 of a.east
+       , rectangle split
+       , rectangle split parts = 3
+       , text width = \tw, text height = \th
+       , draw, label=negative ]
+  {%
+    False Positive ($FP$)
+    \nodepart{two} True Negative ($TN$)
+    \nodepart{three} Rejected Negative ($RN$)
+  };
+
+  \node[above=2em of a.north east]{True class};
+
+  \matrix[left=0 of a.170, left delimiter=\{] (m)
+  {%
+    \node[text width=\tww,text height=\th]{positive};\\
+    \node[text width=\tww,text height=\th]{negative};\\
+  };
+
+  \node[left=0 of m.west, text width=2cm] {Predicted class};
+
+  \node[
+    left=0 of a.196, text width=\twww, text height=\th
+  ] {rejected};
+\end{tikzpicture}
+\caption{Confusion matrix for binary abstention
+         classifiers.}
+\label{fig:cm}
+\end{center}
+\end{figure}
+
+From the confusion matrix we can derive interesting metrics
+for the binary classifier, the most important being the
+accuracy
+\begin{align*}
+A = \frac{TP + TN}{TP + TN + FP + FN},
+\end{align*}
+the true positive rate $TPr$ and the false positive rate
+$FPr$:
+\begin{align*}
+TPr = \frac{TP}{TP + FN},\ FPr = \frac{FP}{FP + TN}.
+\end{align*}
+
+For a binary abstention classifier we can also add the
+rejection rate
+\begin{align*}
+R = \frac{RP + RN}{RP + RU + TP + TN + FP + FN}.
+\end{align*}
+
+In order to construct a combined classifier \textit{B:M}
+we first need the meta data.
+For that we use the $k$-fold method normally used as a
+cross-validation technique
+\citep[see][Chapter 7.10]{elem_stat}.
+
+Let $\Lbag z_1,\dots,z_n \Rbag,\ z_i \in \textbf{Z}:
+\textbf{X} \times \textbf{Y}$ be our training set.
+We split the training set in $k$ roughly equal sized
+partitions.
+For each partition: take the partition as test set,
+combine the others to a training set and fit $B$ to it.
+Let $B$ predict on the test set which then generates a
+partition of the meta data
+$\Lbag z^{\prime}_i,\dots,z^{\prime}_{i+l} \Rbag,\
+z^{\prime}_i \in \textbf{Z}^{\prime}: \textbf{X} \times
+\{0,1\}$ (see Algorithm~\ref{alg:kfoldmeta}).
+
+% pp / pn
+
+% internal threshold T for pp / pn
+
+% ROC ...
+
+\begin{algorithm}
+  \caption{: k-fold method for meta data generation}
+  \label{alg:kfoldmeta}
+
+  \textbf{Input:}
+
+  \quad $B$: a classifier,
+
+  \quad bag: a bag of examples $\Lbag z_1,\dots,z_n \Rbag$,
+
+  \quad $k$: the amount of partitions
+
+  \textbf{Output:}
+
+  \quad meta-data: a bag of examples
+    $\Lbag z^{\prime}_1,\dots,z^{\prime}_n \Rbag$
+
+  \begin{algorithmic}[1]
+    \STATE{split bag into $k$ roughly equal sized
+           partitions $\text{bag}_1,\dots,\text{bag}_k$}
+    \FORALL{$\text{bag}_i, i=1,\dots,k$}
+      \STATE{combine all $\text{bags} \neq \text{bag}_i$
+             to the training set}
+      \STATE{train $B$ with the training set}
+      \STATE{let $B$ predict examples in $\text{Bag}_i$}
+      \FORALL{$(x_j,y_j) \in \text{bag}_i$}
+        \STATE{add element to meta data:
+          $
+            \Bigg(x_j, y^{\prime}_j :=
+            \begin{cases}
+              0 &\quad \text{if prediction of $B$ for
+                             $x_j \neq y_j$}\\
+              1 &\quad \text{if prediction of $B$ for
+                             $x_j = y_j$}\\
+            \end{cases}
+            \Bigg)
+          $
+        }
+      \ENDFOR
+    \ENDFOR
+    \RETURN{meta data}
+  \end{algorithmic}
+\end{algorithm}
 
 \section{Conclusion}
 
