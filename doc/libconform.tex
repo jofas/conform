@@ -94,6 +94,7 @@ Appendix~\ref{appendix:a} provides an overview over
 examples on how to use the library.
 
 \section{Conformal predictors}
+\label{sec:cp}
 
 Like stated in the introduction, this chapter will only
 outline conformal prediction (CP). For more details see
@@ -793,7 +794,9 @@ the MCP based on this $\textbf{K}$ a label conditional
 
 \texttt{mondrian\_taxonomoy} will change in a future
 version to $K_n$ for more flexibility.
+\\
 
+\noindent
 \citet[Chapter 4.5]{alrw} defines mondrian nonconformity
 measures
 \begin{align*}
@@ -806,7 +809,110 @@ Currently \libconform{} does not have an API for mondrian
 nonconformity measures, which could change in
 future releases.
 
-\section{Probabilistic prediction: Venn predictors}
+\section{Multi-probabilistic prediction: Venn predictors}
+
+In the previous chapters we measured the likelihood of a
+prediction based on p-values. Even though they produce
+valid confidence predictions, the use of p-values is
+controversial and they have disadvantages compared to
+the probability of a prediction, namely that they are
+harder to reason about and that they are often confused
+with probabilities \citep[see][Chapter 6.3]{alrw}.
+
+The main negative property of probabilistic prediction is
+the fact that it is impossible to estimate true
+probabilities---under the unconstrained randomness
+assumption---from a finite bag of examples, if the objects
+of the bag do not precisely repeat themselves
+\citep[see][Chapter 5]{alrw}.
+
+To bypass this property and to achieve a notion of
+validity, Venn predictors produce a set of probability
+distributions $\{P_y|y\in \textbf{Y}\}$,
+$|\textbf{Y}| < \infty$ as their predictions, for which
+reason they are called multi-probabilistic predictors
+\citep[see][Chapter 2.8]{cprml}.
+
+There are two definitions of validity for a Venn predictor,
+the stronger form of validity being that Venn predictors
+are ``well-calibrated'' \citep[see][Chapter 6]{alrw}, while
+the weaker form of validity states that---under the
+unconstrained randomness assumption---a Venn predictor's
+prediction is guaranteed to contain the conditional
+probability in its multi-probabilistic prediction with
+regard to the true probability distribution generating the
+examples \citep[see][Chapter 2.8]{cprml}.
+
+A Venn predictor is based on a Venn taxonomy $V_n$ equal to
+the $n$-taxonomy described in the previous chapter. Now,
+suppose we want to predict the probability distribution for
+$z_{n+1} := (x_{n+1}, y); y \in \textbf{Y}$.
+We first determine the category $K \in \textbf{K}$ of
+$z_{n+1}$ with $V_{n+1}$ and then look at the frequency of
+$y$ in this particular category to generate the probability
+distribution:
+\begin{align*}
+P_y = \frac{|\{(x_i,y_i) \in K: y_i = y\}|}{|K|}.
+\end{align*}
+$K$ is not empty since it at least contains $z_{n+1}$.
+This is done for each $y \in \textbf{Y}$ generating the
+set of probability distributions
+$\{P_y|y \in \textbf{Y}\}$ which is returned as the
+multi-probability prediction. The label with the highest
+probability is the predicted label.
+
+An example for such a Venn predictor is described in
+\citet[Chapter 6.3]{alrw}. It is based on a Venn taxonomy
+using the 1-nearest neighbor method to map an example to a
+category.
+In this case the Venn taxonomy returns the label of the
+nearest neighbor as the category.
+
+The Venn predictor generates a matrix
+$M:|\textbf{Y}| \times |\textbf{Y}|$. Each example
+$z_{n+1} := (x_{n+1},y);y \in \textbf{Y}$ is mapped to a
+row.
+Each column contains the frequency of $y_i \in \textbf{Y}$
+of all examples in the same category as $z_{n+1}$.
+
+The quality of a column is its minimum entry. Now select
+the best column $M_{best}$ (with the highest quality) an
+return the label of the cell with the highest frequency as
+the label prediction and the column as the
+multi-probability prediction $\{P_y|y\in \textbf{Y}\}$
+\citep[see][Chapter 6.3]{alrw}.
+
+Actually, in the example in \citet[Chapter 6.3]{alrw},
+instead of returning $\{P_y|y\in \textbf{Y}\}$ the Venn
+predictor returns the interval of the convex hull of the
+multi-probability prediction:
+$[min\ M_{best},\ max\ M_{best}]$.
+This is called the probability interval. The complementary
+interval $[1-max\ M_{best},\ 1-min\ M_{best}]$ is called
+the error probability interval.
+\\\\
+
+\noindent
+\textbf{Notes on the implementation:}
+Venn prediction---like described above---is implemented as
+\texttt{Venn}. It again implements the same API as
+\texttt{CP} does. The only difference is that
+\texttt{Venn}'s \texttt{predict} method takes a flag
+\texttt{proba}. If \texttt{proba} is off only the label
+prediction is returned. On the other hand, it
+\texttt{proba} is set, the label prediction and the error
+probability interval is returned.
+
+Currently Venn taxonomies have their own module
+\texttt{vtx}. A Venn taxonomy is an instance of a class
+that inherits from \texttt{VTXBase}, the same design
+like \texttt{NCSBase} and \texttt{NCSBase\-Re\-gres\-sor}
+(see Chapter~\ref{sec:cp}).
+Once the MCP implementation from the previous chapter moves
+from $1$-taxonomies $K_1$ to $n$-taxonomies $K_n$, Venn
+taxonomies and $n$-taxonomies will be combined---since they
+are equal---and \libconform{} will provide a new API for
+both together.
 
 \section{Meta-conformal predictors}
 

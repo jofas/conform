@@ -34,9 +34,7 @@ class Venn:
             # also reset categories
             self.categories = {}
 
-        cs = self.venn_taxonomy.train(
-            self.X_train, self.y_train
-        )
+        self.venn_taxonomy.train(self.X_train,self.y_train)
 
         for x, y in zip(self.X_train, self.y_train):
             c = self.venn_taxonomy.category(x, y, True)
