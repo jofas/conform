@@ -41,11 +41,21 @@
 
 \maketitle
 
-%\begin{abstract}%
-%\end{abstract}
+\begin{abstract}%
+This paper introduces \libconform{} \version{}, a Python
+library for the conformal prediction framework, licensed
+under the MIT-license.
+\libconform{} is not yet stable.
+This paper describes the main algorithms implemented and
+documents the API of \libconform{}.
+Also some details about the implementation and changes in
+future versions are described.
+\end{abstract}
 
-%\begin{keywords}
-%\end{keywords}
+\begin{keywords}
+conformal prediction, Venn prediction, Python,
+reliable machine learning
+\end{keywords}
 
 
 \section{Introduction}
@@ -123,17 +133,20 @@ with previous observed examples. Conformal prediction can
 be used either in the online or the offline---or
 batch---learning setting.
 The offline learning setting, compared to online learning,
-weakens the validity and efficiency---described below in
+weakens the validity and efficiency---outlined below in
 this chapter---of the classifier in favor of computational
 efficiency \citep[see][Chapter 4]{alrw}.
+\\
 
+\noindent
 Let $\Lbag z_1,\dots,z_n \Rbag$ be a bag, also called
 multiset%
 \footnote{It is typical in machine learning to denote this
 as a data set, even though examples do not have to
 be unique, making the so called set a multiset. A multiset
 is not a list, since the ordering of the elements is not
-important.},
+important. If training set, test set, etc.\ is written in
+this paper it always means denotes a bag, not a set.},
 of examples, where each example $z_i \in \textbf{Z}$ is a
 tuple $(x_i,y_i); x_i \in \textbf{X}, y_i \in \textbf{Y}$.
 \textbf{X} is called the observation space and \textbf{Y}
@@ -150,7 +163,9 @@ A conformal predictor $\Gamma^\epsilon$ in the online
 setting is conservatively valid under the exchangeability
 assumption, which means, as long as exchangeability holds,
 it makes errors at a frequency of $\epsilon$ or less. For
-more on that refer to \citet[][Chapters 1--4, 7]{alrw}.
+more on exchangeability and the proof that CP is valid
+under exchangeability refer to
+\citet[][Chapters 1--4, 7]{alrw}.
 
 CP, in its original setting, produces nested prediction
 sets. Rather than returning a single label as its
@@ -165,7 +180,9 @@ $\Gamma^{\epsilon_1}$ is a subset of $\Gamma^{\epsilon_2}$
 
 The efficiency of a classifier is the frequency with which
 it classifies new observations with a single label.
+\\
 
+\noindent
 In order to predict the label of a new observation
 $x_{n+1}$, set $z_{n+1}:=(x_{n+1}, y)$, for each
 $y \in \textbf{Y}$ and check how $z_{n+1}$ conforms with
@@ -193,7 +210,7 @@ $A_{n+1}:\textbf{Z}^{n+1} \times \textbf{Z} \rightarrow
 Which one is preferable is case-dependent
 \citep[see][Chapter 4.2.2]{shafer_et_al_2008}.
 
-$\alpha_i$ is called nonconformity score.
+$\alpha_i$ is called a nonconformity score.
 The nonconformity score can now be used to compute the
 p-value for $z_{n+1}$, which is the fraction of examples
 from the bag which are at least as nonconforming as
@@ -219,6 +236,7 @@ a smoothed conformal predictor and is exactly valid under
 exchangeability in the online setting, which means it makes
 errors at a rate exactly $\epsilon$
 \citep[see][Chapter 2]{alrw}.
+
 If the p-value of $z_{n+1}$ is larger than $\epsilon$, $y$
 is added to the prediction set.
 
@@ -1193,11 +1211,39 @@ Quickhull algorithm \citep[see][]{scipy,barber_et_al_1996}.
 
 \section{Conclusion}
 
-% still to implement: ACP, IRRCM, ncs, ...
+Like stated in the introduction, \libconform{} \version{}
+is not yet stable. The API is likely to change and improve
+and the library needs more tests. Furthermore there are
+some algorithms from the conformal prediction framework
+still missing, including:
 
-% not stable -> API + tests
+\begin{itemize}
 
-% extensible
+  \item aggregated conformal prediction
+        \citep[see][]{carlsson_et_al_2014}
+
+  \item inductive ridge regression confidence machine
+        \citep[see][]{papadopoulos_et_al_2002}
+
+  \item Venn abers predictors
+        \citep[see][]{vovk_et_al_2014}
+
+  \item more nonconformity scores which come out of the box
+        with \libconform{}
+
+\end{itemize}
+Also the performance and especially multi-threading is an
+issue which will be dealt with in future versions.
+
+All that said, currently \libconform{} provides a very
+extensible API and already implements some of the main
+algorithms of the conformal prediction framework.
+
+The goal for \libconform{} is to be one day
+the go to implementation of the conformal prediction
+framework for Python. Hopefully it can attract newcomers to
+use conformal prediction for their needs and will become a
+community project, which grows and improves constantly.
 
 \renewcommand{\appendixpagename}{}
 \begin{appendices}
