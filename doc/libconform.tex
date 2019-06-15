@@ -9,6 +9,7 @@
 \usepackage{algorithmic}
 \usepackage{tikz}
 \usepackage{tabu}
+\usepackage{listings}
 
 \usetikzlibrary{%
     arrows,
@@ -1586,6 +1587,80 @@ community project, which grows and improves constantly.
             \item
               \texttt{vtx.base.VTXBase}
 
+              Base class for Venn taxonomies. If a Python
+              object is passed to \texttt{Venn} as a
+              Venn taxonmy and the object does not inherit
+              from \texttt{VTXBase} an exception is raised.
+              \\
+
+              Methods
+
+              \begin{itemize}
+
+                \item
+                  \texttt{train(X, y)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  Venn taxonomy.
+                  \\
+
+                  This method is for training the
+                  underlying algorithm $D$ based on which
+                  a Venn taxonomy generates its categories.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{X}:
+                                &matrix containing the
+                                 observations of a training
+                                 set.
+                                 \\
+                                &\texttt{y}:
+                                &vector containing the
+                                 labels of a training set.
+                                 \\
+                  \end{tabu}
+                  \wo
+
+                \item
+                  \texttt{category(x, y, contains\_x)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  Venn taxonomy.
+                  \\
+
+                  Computes the category of the example
+                  $z := (\texttt{x}, \texttt{y})$.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{x}:
+                                &an observation.
+                                 \\
+                                &\texttt{y}:
+                                &a label.
+                                 \\
+                                &\texttt{contains\_x}:
+                                &boolean whether
+                                $x$ was part of the
+                                training set passed to the
+                                \texttt{train} method.
+                                Some Venn taxonomies may
+                                want to change their
+                                behaviour if $x$ was part
+                                of the training set.
+                                 \\\\
+                    Returns:    &\texttt{c}:
+                                &a category for the
+                                 example $z$.
+                                 \\
+                  \end{tabu}
+                  \wo
+
+              \end{itemize}
+
           \end{itemize}
 
         \item \texttt{vtx.VTXKNearestNeighbors}
@@ -1607,17 +1682,38 @@ community project, which grows and improves constantly.
   %TODO: output predict -> matrix
   % ref text <-> appendix
 
+  \lstset{%
+    numbers = left,
+    firstnumber = 0,
+    stepnumber = 5,
+    frame = single,
+    breaklines = true,
+  }
+
   \section{Examples}
   \label{appendix:b}
 
-  \subsection{\texttt{CP}}
-    \subsubsection{Nonconformity measure based on keras
-                   neural net}
+  \subsection{\texttt{CP} on the iris data set with
+              different nonconformity measures}
+
+  \lstinputlisting[language=Python]{../examples/cp/cp.py}
+
+  \subsubsection{Nonconformity measure based on keras
+                 neural net}
+
+  \lstinputlisting[language=Python]
+  {../examples/cp/neural_net.py}
+
   \subsection{\texttt{ICP}}
+
   \subsection{\texttt{MCP}}
+
   \subsection{\texttt{RRCM}}
+
   \subsection{\texttt{Venn}}
+
   \subsection{\texttt{Meta}}
+
   \subsection{Implementing \texttt{NCSScore}}
 
 \end{appendices}
