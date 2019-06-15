@@ -19,7 +19,10 @@ class NCSDecisionTree(NCSBase):
         return res
 
     def score(self, x, labels):
-        node = self.clf.apply(x.reshape(1, -1))[0]
-        val = self.clf.tree_.value[node][0]
-        g = self.clf.tree_.n_node_samples[node]
-        return [1 - val[l] / g for l in labels]
+        try:
+            node = self.clf.apply(x.reshape(1, -1))[0]
+            val = self.clf.tree_.value[node][0]
+            g = self.clf.tree_.n_node_samples[node]
+            return [1 - val[l] / g for l in labels]
+        except:
+            return [0.0 for l in labels]

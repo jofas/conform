@@ -1,8 +1,8 @@
-from conform import CP, ICP, RRCM, Venn, Meta
-from conform.ncs import NC1NN, NCSNeuralNet, \
+from libconform import CP, ICP, RRCM, Venn, Meta
+from libconform.ncs import NC1NN, NCSNeuralNet, \
     NCSDecisionTree, NCSKNearestNeighbors, \
     NCSKNearestNeighborsRegressor
-from conform.vtx import VTXKNearestNeighbors
+from libconform.vtx import VTXKNearestNeighbors
 
 import h5py
 import numpy as np

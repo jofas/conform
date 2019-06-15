@@ -8,6 +8,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{tikz}
+\usepackage{tabu}
 
 \usetikzlibrary{%
     arrows,
@@ -27,6 +28,8 @@
 
 \def\version{\texttt{v0.1.0}}
 \def\libconform{\texttt{libconform}}
+
+\def\wo{~\\}
 
 \title{\libconform{} \version: a Python library for
        conformal prediction}
@@ -261,7 +264,7 @@ is added to the prediction set.
     \RETURN{prediction set}
   \end{algorithmic}
 \end{algorithm}
-\textcolor{white}{bad workaround}\\
+\wo
 
 \noindent
 \textbf{Notes on the implementation:}
@@ -722,6 +725,7 @@ e.g.\ a red-black tree.
 
 \section{Mondrian or conditional (inductive) conformal
          predictors}
+\label{sec:mcp}
 
 The property of validity under the exchangeablity
 assumption can be further optimized with mondrian or
@@ -845,6 +849,7 @@ nonconformity measures, which could change in
 future releases.
 
 \section{Multi-probabilistic prediction: Venn predictors}
+\label{sec:venn}
 
 In the previous chapters we measured the likelihood of a
 prediction based on p-values. Even though they produce
@@ -1188,7 +1193,7 @@ training operation of \textit{B:M} is over.
     \RETURN{meta data}
   \end{algorithmic}
 \end{algorithm}
-\textcolor{white}{bad workaround}\\
+\wo
 
 \noindent
 \textbf{Notes on the implementation:}
@@ -1245,6 +1250,7 @@ framework for Python. Hopefully it can attract newcomers to
 use conformal prediction for their needs and will become a
 community project, which grows and improves constantly.
 
+
 \renewcommand{\appendixpagename}{}
 \begin{appendices}
   \section*{Appendices}
@@ -1252,8 +1258,367 @@ community project, which grows and improves constantly.
   \section{API reference}
   \label{appendix:a}
 
+  \begin{itemize}
+
+    % ncs {{{
+    \item
+      \texttt{ncs}
+
+      Module for nonconformity measures, both for
+      classification and regression.
+      Instances of nonconformity measures are needed by
+      \texttt{CP, ICP} and \texttt{RRCM} in order for them
+      to be able to predict.
+      \\
+
+      Members
+
+      \begin{itemize}
+
+        % base {{{
+        \item
+          \texttt{ncs.base}
+
+          Module containing the base classes from which
+          nonconformity measurement implementations
+          inherit.
+          \\
+
+          Members
+
+          \begin{itemize}
+
+            % NCSBase {{{
+            \item
+              \texttt{ncs.base.NCSBase}
+
+              Base class for nonconformity measures for
+              classification.
+              If a Python object is passed to \texttt{CP}
+              or \texttt{ICP} as a nonconformity measure
+              and the object does not inherit from
+              \texttt{NCSBase} an exception is raised.
+              \\
+
+              Methods
+
+              \begin{itemize}
+
+                % train {{{
+                \item
+                  \texttt{train(X, y)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  nonconformity measure.
+                  \\
+
+                  This method is for training the
+                  underlying algorithm $D$ based on which
+                  the nonconformity measure generates the
+                  nonconformity scores.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{X}:
+                                &matrix containing the
+                                 observations of a training
+                                 set.
+                                 \\
+                                &\texttt{y}:
+                                &vector containing the
+                                 labels of a training set.
+                                 \\
+                  \end{tabu}
+                  \wo
+                % }}}
+
+                % scores {{{
+                \item
+                  \texttt{scores(X, y, cp)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  nonconformity measure.
+                  \\
+
+                  Computes the scores for each example
+                  from a bag.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{X}:
+                                &matrix containing the
+                                 observations of a bag of
+                                 examples.
+                                 \\
+                                &\texttt{y}:
+                                &vector containing the
+                                 labels of a bag of
+                                 examples.
+                                 \\
+                                &\texttt{cp}:
+                                &boolean whether
+                                 \texttt{CP} called this
+                                 method or not.
+                                 If \texttt{CP} called this
+                                 method than \texttt{X} and
+                                 \texttt{y} are equal to
+                                 the training set provided
+                                 to \texttt{train}.
+                                 This way a nonconformity
+                                 measure can implement
+                                 (\ref{eq:a0}) rather than
+                                 (\ref{eq:a1}).
+                                 \\\\
+                    Returns:    &\texttt{S}:
+                                &a vector with the score
+                                 for each example in the
+                                 bag.
+                                 \\
+                  \end{tabu}
+                  \wo
+                % }}}
+
+                % score {{{
+                \item
+                  \texttt{score(x, labels)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  nonconformity measure.
+                  Could change in a future version from
+                  the observation \texttt{x} to a bag of
+                  observations \texttt{X}.
+                  \\
+
+                  This method computes the score
+                  for each new example $z_g := (x_g, y),
+                  y \in \textbf{Y}$.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{x}:
+                                &an observation.
+                                 \\
+                                &\texttt{labels}:
+                                &all possible elements of
+                                 $\textbf{Y}$.
+                                 \\\\
+                    Returns:    &\texttt{SL}:
+                                &vector with the score
+                                 for each $z_g$.
+                                 \\
+                    \end{tabu}
+                    \wo
+                % }}}
+              \end{itemize}
+            % }}}
+
+            % NCSBaseRegressor {{{
+            \item
+              \texttt{ncs.base.NCSBaseRegressor}
+
+              Base class for nonconformity measures for
+              regression. If a Python object is passed to
+              \texttt{RRCM} as a nonconformity measure and
+              the object does not inherit from
+              \texttt{NCSBaseRegressor} an exception is
+              raised.
+              \\
+
+              Methods
+
+              \begin{itemize}
+
+                \item
+                  \texttt{train(X, y)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  nonconformity measure.
+                  \\
+
+                  This method is for training the
+                  underlying algorithm $D$ based on which
+                  the nonconformity measure generates the
+                  nonconformity scores.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{X}:
+                                &matrix containing the
+                                 observations of a training
+                                 set.
+                                 \\
+                                &\texttt{y}:
+                                &vector containing the
+                                 labels of a training set.
+                                 \\
+                  \end{tabu}
+                  \wo
+
+                \item
+                  \texttt{coeffs(X, y, cp)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  nonconformity measure.
+                  \\
+
+                  Computes $a$ and $b$ for each example
+                  from a bag.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{X}:
+                                &matrix containing the
+                                 observations of a bag of
+                                 examples.
+                                 \\
+                                &\texttt{y}:
+                                &vector containing the
+                                 labels of a bag of
+                                 examples.
+                                 \\
+                                &\texttt{cp}:
+                                &boolean whether
+                                 \texttt{CP} called this
+                                 method or not.
+                                 If \texttt{CP} called this
+                                 method than \texttt{X} and
+                                 \texttt{y} are equal to
+                                 the training set provided
+                                 to \texttt{train}.
+                                 This way a nonconformity
+                                 measure can implement
+                                 (\ref{eq:a0}) rather than
+                                 (\ref{eq:a1}).
+                                 \\\\
+                      Returns:  &\texttt{A, B}:
+                                &two vectors with the $a$
+                                 and $b$ for each example
+                                 in the bag.
+                                 \\
+                    \end{tabu}
+                    \wo
+
+                \item
+                  \texttt{coeffs\_n(x)}
+
+                  Dummy method which needs to be
+                  implemented by the inheriting
+                  nonconformity measure.
+                  Could change in a future version from the
+                  observation \texttt{x} to a bag of
+                  observations \texttt{X}.
+                  \\
+
+                  This method computes the score for a
+                  new observation which should be
+                  predicted.
+                  \\
+
+                  \begin{tabu}{llX}
+                    Parameters: &\texttt{x}:
+                                &an observation.
+                                 \\\\
+                    Returns:    &\texttt{a, b}:
+                                &the coefficients $a$ and
+                                 $b$ of the observation.
+                                 \\
+                  \end{tabu}
+                  \wo
+
+              \end{itemize}
+            % }}}
+
+          \end{itemize}
+        % }}}
+
+        % NCSDecisionTree {{{
+        \item
+          \texttt{ncs.NCSDecisionTree}
+        % }}}
+
+        % NCSKNearestNeighbors {{{
+        \item
+          \texttt{ncs.NCSKNearestNeighbors}
+        % }}}
+
+        % NCSKNearestNeighborsRegressor {{{
+        \item
+          \texttt{ncs.NCSKNearestNeighborsRegressor}
+        % }}}
+
+        % NCSNeuralNet {{{
+        \item
+          \texttt{ncs.NCSNeuralNet}
+        % }}}
+
+      \end{itemize}
+    % }}}
+
+    \item
+      \texttt{vtx}
+
+      Module for Venn taxonomies. Will be deprecated in
+      future versions in favor of a module for
+      $n$-taxonomies (see
+      Chapters~\ref{sec:mcp},~\ref{sec:venn}).
+      \\
+
+      Members
+
+      \begin{itemize}
+
+        \item
+          \texttt{vtx.base}
+
+          Module containing the base class from which Venn
+          taxonomies implementations inherit.
+          \\
+
+          Members
+
+          \begin{itemize}
+
+            \item
+              \texttt{vtx.base.VTXBase}
+
+          \end{itemize}
+
+        \item \texttt{vtx.VTXKNearestNeighbors}
+
+      \end{itemize}
+
+    \item \texttt{CP}
+
+    \item \texttt{ICP}
+
+    \item \texttt{RRCM}
+
+    \item \texttt{Venn}
+
+    \item \texttt{Meta}
+
+  \end{itemize}
+
+  %TODO: output predict -> matrix
+  % ref text <-> appendix
+
   \section{Examples}
   \label{appendix:b}
+
+  \subsection{\texttt{CP}}
+    \subsubsection{Nonconformity measure based on keras
+                   neural net}
+  \subsection{\texttt{ICP}}
+  \subsection{\texttt{MCP}}
+  \subsection{\texttt{RRCM}}
+  \subsection{\texttt{Venn}}
+  \subsection{\texttt{Meta}}
+  \subsection{Implementing \texttt{NCSScore}}
 
 \end{appendices}
 

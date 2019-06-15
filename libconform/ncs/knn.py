@@ -61,8 +61,11 @@ class NCSKNearestNeighbors(NCSBase):
 
         d_neq = sum(sorted(dists_neq)[:n])
 
-        d_eq = sum(nns[y][1:]) if contains_x else \
-            sum(nns[y][:-1])
+        if y in nns:
+            d_eq = sum(nns[y][1:]) if contains_x else \
+                sum(nns[y][:-1])
+        else:
+            d_eq = inf
 
         return 0.0          if d_eq == d_neq else \
                d_eq / d_neq if d_neq > 0.0   else \

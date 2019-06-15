@@ -158,10 +158,7 @@ class CP(_CPBase):
 
         res = CPMetrics(self.epsilons)
 
-        count = 0
         for x_, y_ in zip(X, y):
-            count += 1
-            if count % 5 == 0: print(str(count) + "\r")
             k = self.mondrian_taxonomy(x_, y_)
             p = self.predict(x_)[0]
             res.update(p, self.labels.reverse(y_), k)
