@@ -1880,7 +1880,6 @@ community project, which grows and improves constantly.
                     same category.
                     \\
       \end{tabu}
-      \wo
 
       Methods
 
@@ -1954,7 +1953,7 @@ community project, which grows and improves constantly.
                          be returned, too.
                          \\\\
             Returns:    &\texttt{predictions,
-                                 significance\_levels}
+                                 sig\_levels}
                         &a vector with the best labels,
                          optionally a vector with the
                          significance level of the best
@@ -2229,6 +2228,25 @@ community project, which grows and improves constantly.
         % predict {{{
         \item
           \texttt{predict(X, proba = True)}
+          \label{itm:cp_predict}
+
+          \begin{tabu}{lp{4cm}X}
+            Paramters: &\texttt{X}
+                       &matrix containing observations
+                        which should be predicted.
+                        \\
+                       &\texttt{proba}
+                       &flag whether the error probability
+                        interval of the predictions should
+                        be returned, too
+                        \\\\
+            Returns:   &\texttt{predictions,
+                                error\_probabilites}
+                       &a vector with the predicted labels,
+                        optionally a vector with the
+                        error probability intervals.
+          \end{tabu}
+          \wo
         % }}}
 
         % score {{{
@@ -2260,6 +2278,27 @@ community project, which grows and improves constantly.
       (see Chapter~\ref{sec:meta}).
       \\
 
+      \begin{tabu}{llX}
+        Parameters: &\texttt{M\_train}
+                    &callable interfacing with the meta
+                     classifier for training it.
+                     \\
+                    &\texttt{M\_predict}
+                    &callable interfacing with the meta
+                     classifier for predicting.
+                     \\
+                    &\texttt{B\_train}
+                    &callable interfacing with the base
+                     classifier for training it.
+                     \\
+                    &\texttt{B\_predict}
+                    &callable interfacing with the bas
+                     classifier for predicting.
+                     \\
+                    &\texttt{epsilons}
+                    &list containing significance levels.
+      \end{tabu}
+
       Methods
 
       \begin{itemize}
@@ -2267,6 +2306,33 @@ community project, which grows and improves constantly.
         % train {{{
         \item
           \texttt{train(X, y, k\_folds, plot = False)}
+
+          Generates the internal threshold $T$ and trains
+          $B$ and $M$.
+          \\
+
+          \begin{tabu}{llX}
+            Parameters: &\texttt{X}
+                        &matrix containing the observations
+                         of a training set.
+                         \\
+                        &\texttt{y}
+                        &vector containing the labels of a
+                         training set.
+                         \\
+                        &\texttt{k\_folds}
+                        &how many partitions are use for
+                         generating the meta data and
+                         scores.
+                         \\
+                        &\texttt{plot}
+                        &flag whether a matplotlib
+                         \citep[see][]{hunter_2007} is
+                         shown with the ROC curve, the
+                         ROCCH and the iso-precision lines.
+                         If the plot is shown the execution
+                         of \texttt{train} is stopped.
+          \end{tabu}
         % }}}
 
         % predict {{{
@@ -2291,9 +2357,6 @@ community project, which grows and improves constantly.
     % }}}
 
   \end{itemize}
-
-  %TODO: output predict -> matrix
-  % ref text <-> appendix
 
   \lstset{%
     basicstyle=\footnotesize,
