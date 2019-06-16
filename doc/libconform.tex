@@ -10,6 +10,7 @@
 \usepackage{tikz}
 \usepackage{tabu}
 \usepackage{listings}
+\usepackage{fancyref}
 
 \usetikzlibrary{%
     arrows,
@@ -956,6 +957,7 @@ are equal---and \libconform{} will provide a new API for
 both together.
 
 \section{Meta-conformal predictors}
+\label{sec:meta}
 
 For understanding how meta-conformal predictors achieve
 reliability we have to introduce the concept of abstention
@@ -1292,6 +1294,7 @@ community project, which grows and improves constantly.
             % NCSBase {{{
             \item
               \texttt{ncs.base.NCSBase}
+              \label{itm:ncsbase}
 
               Base class for nonconformity measures for
               classification.
@@ -1308,6 +1311,7 @@ community project, which grows and improves constantly.
                 % train {{{
                 \item
                   \texttt{train(X, y)}
+                  \label{itm:ncsbase_train}
 
                   Dummy method which needs to be
                   implemented by the inheriting
@@ -1321,12 +1325,12 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{X}:
+                    Parameters: &\texttt{X}
                                 &matrix containing the
                                  observations of a training
                                  set.
                                  \\
-                                &\texttt{y}:
+                                &\texttt{y}
                                 &vector containing the
                                  labels of a training set.
                                  \\
@@ -1348,17 +1352,17 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{X}:
+                    Parameters: &\texttt{X}
                                 &matrix containing the
                                  observations of a bag of
                                  examples.
                                  \\
-                                &\texttt{y}:
+                                &\texttt{y}
                                 &vector containing the
                                  labels of a bag of
                                  examples.
                                  \\
-                                &\texttt{cp}:
+                                &\texttt{cp}
                                 &boolean whether
                                  \texttt{CP} called this
                                  method or not.
@@ -1372,7 +1376,7 @@ community project, which grows and improves constantly.
                                  (\ref{eq:a0}) rather than
                                  (\ref{eq:a1}).
                                  \\\\
-                    Returns:    &\texttt{S}:
+                    Returns:    &\texttt{S}
                                 &a vector with the score
                                  for each example in the
                                  bag.
@@ -1399,14 +1403,14 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{x}:
+                    Parameters: &\texttt{x}
                                 &an observation.
                                  \\
-                                &\texttt{labels}:
+                                &\texttt{labels}
                                 &all possible elements of
                                  $\textbf{Y}$.
                                  \\\\
-                    Returns:    &\texttt{SL}:
+                    Returns:    &\texttt{SL}
                                 &vector with the score
                                  for each $z_g$.
                                  \\
@@ -1419,6 +1423,7 @@ community project, which grows and improves constantly.
             % NCSBaseRegressor {{{
             \item
               \texttt{ncs.base.NCSBaseRegressor}
+              \label{itm:ncsbaseregressor}
 
               Base class for nonconformity measures for
               regression. If a Python object is passed to
@@ -1447,12 +1452,12 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{X}:
+                    Parameters: &\texttt{X}
                                 &matrix containing the
                                  observations of a training
                                  set.
                                  \\
-                                &\texttt{y}:
+                                &\texttt{y}
                                 &vector containing the
                                  labels of a training set.
                                  \\
@@ -1472,17 +1477,17 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{X}:
+                    Parameters: &\texttt{X}
                                 &matrix containing the
                                  observations of a bag of
                                  examples.
                                  \\
-                                &\texttt{y}:
+                                &\texttt{y}
                                 &vector containing the
                                  labels of a bag of
                                  examples.
                                  \\
-                                &\texttt{cp}:
+                                &\texttt{cp}
                                 &boolean whether
                                  \texttt{CP} called this
                                  method or not.
@@ -1496,7 +1501,7 @@ community project, which grows and improves constantly.
                                  (\ref{eq:a0}) rather than
                                  (\ref{eq:a1}).
                                  \\\\
-                      Returns:  &\texttt{A, B}:
+                      Returns:  &\texttt{A, B}
                                 &two vectors with the $a$
                                  and $b$ for each example
                                  in the bag.
@@ -1521,10 +1526,10 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{x}:
+                    Parameters: &\texttt{x}
                                 &an observation.
                                  \\\\
-                    Returns:    &\texttt{a, b}:
+                    Returns:    &\texttt{a, b}
                                 &the coefficients $a$ and
                                  $b$ of the observation.
                                  \\
@@ -1539,27 +1544,162 @@ community project, which grows and improves constantly.
 
         % NCSDecisionTree {{{
         \item
-          \texttt{ncs.NCSDecisionTree}
+          \texttt{ncs.NCSDecisionTree(**sklearn)}
+
+          Class implementing a nonconformity measure based
+          on a decision tree for classification.
+          The score for an example $z := (x,y)$ is the
+          amout of examples with the same label $y$ in the
+          tree node containing $z$ devided through all the
+          examples the tree node contains
+          \citep[see][Chapter 4]{alrw}.
+          \\
+
+          The implementation is based on the scikit-learn
+          implementation \citep[see][]{sklearn_api}.
+          \\
+
+          \begin{tabu}{llX}
+            Paramters: &\texttt{**sklearn}
+                       &keyword arguments for the decision
+                        tree implementation of
+                        scikit-learn.
+          \end{tabu}
+          \wo
+
+          Methods
+
+          See~\hyperref[itm:ncsbase]
+          {\texttt{ncs.base.NCSBase}}.
+          \\
+
         % }}}
 
         % NCSKNearestNeighbors {{{
         \item
-          \texttt{ncs.NCSKNearestNeighbors}
+          \texttt{ncs.NCSKNearestNeighbors(**sklearn)}
+
+          Class implementing a nonconformity measure based
+          on the $k$-nearest neighbors method for
+          classification.
+          The score for an example $z := (x,y)$ is computed
+          as $\frac{d^{y}_k}{d^{-y}_k}$
+          (see Chapter~\ref{subsec:ncs}).
+
+          The implementation is based on the scikit-learn
+          implementation \citep[see][]{sklearn_api}.
+          \\
+
+          \begin{tabu}{llX}
+            Paramters: &\texttt{**sklearn}
+                       &keyword arguments for the
+                        $k$-nearest neigbors implementation
+                        of scikit-learn.
+          \end{tabu}
+          \wo
+
+          Methods
+
+          See~\hyperref[itm:ncsbase]
+          {\texttt{ncs.base.NCSBase}}.
+          \\
+
         % }}}
 
         % NCSKNearestNeighborsRegressor {{{
         \item
-          \texttt{ncs.NCSKNearestNeighborsRegressor}
+          \texttt{ncs.NCSKNearestNeighborsRegressor(%
+                  **sklearn)}
+
+          Class implementing a nonconformity measure based
+          on the $k$-nearest neighbors method for
+          regression (see Chapter~\ref{subsec:rrcm}).
+          \\
+
+          The implementation is based on the scikit-learn
+          implementation \citep[see][]{sklearn_api}.
+          \\
+
+          \begin{tabu}{llX}
+            Paramters: &\texttt{**sklearn}
+                       &keyword arguments for the
+                        $k$-nearest neigbors implementation
+                        of scikit-learn.
+          \end{tabu}
+          \wo
+
+          Methods
+
+          See~\hyperref[itm:ncsbaseregressor]
+          {\texttt{ncs.base.NCSBaseRegressor}}.
+          \\
+
         % }}}
 
         % NCSNeuralNet {{{
         \item
-          \texttt{ncs.NCSNeuralNet}
+          \texttt{ncs.NCSNeuralNet(train\_, predict\_,
+            scorer = "sum", gamma = 0.0)}
+
+          Class implementing a nonconformity measure based
+          on a neural net for classification.
+          The nonconformity score is computed via the
+          output neurons and how their outputs defer.
+          For more on nonconformity scores based on neural
+          nets see \citet[see][Chapter 4]
+          {papadopoulos_et_al_2007,alrw}.
+          \\
+
+          \begin{tabu}{llX}
+            Paramters: &\texttt{train\_}
+                       &callable taking a bag of examples
+                        splitted in \texttt{X} and
+                        \texttt{y}. Should provide an
+                        interface to the fitting operation
+                        of a neural net.
+                        \\
+                       &\texttt{predict\_}
+                       &callable taking a vector of
+                        observations \texttt{X}. Should
+                        provide an interface to the
+                        predict operation of a neural net
+                        and return a score for each label
+                        (each output neuron).
+                        \\
+                       &\texttt{scorer}
+                       &either callable taking a vector of
+                        scores predicted by the neural
+                        net and the label $y$ of the
+                        example $z := (x,y)$ or a string.
+                        Returns the score for $z$.
+                        If \texttt{scorer} is a string it
+                        has to be either \texttt{"sum",
+                        "diff"} or \texttt{"max"}, each a
+                        predifined nonconformity measure
+                        \citep[see][Chapter 4]
+                        {papadopoulos_et_al_2007,alrw}.
+                        \\
+                       &\texttt{gamma}
+                       &constant for calibrating the
+                        \texttt{"sum"} and the
+                        \texttt{"max"} nonconformity
+                        measures.
+                        Ignored if \texttt{scorer} is not
+                        \texttt{"sum"} or \texttt{"max"}.
+                        \\
+          \end{tabu}
+          \wo
+
+          Methods
+
+          See~\hyperref[itm:ncsbase]
+          {\texttt{ncs.base.NCSBase}}.
         % }}}
 
       \end{itemize}
     % }}}
 
+    % vtx {{{
     \item
       \texttt{vtx}
 
@@ -1573,6 +1713,7 @@ community project, which grows and improves constantly.
 
       \begin{itemize}
 
+        % base {{{
         \item
           \texttt{vtx.base}
 
@@ -1584,8 +1725,10 @@ community project, which grows and improves constantly.
 
           \begin{itemize}
 
+            % VTXBase {{{
             \item
               \texttt{vtx.base.VTXBase}
+              \label{itm:vtxbase}
 
               Base class for Venn taxonomies. If a Python
               object is passed to \texttt{Venn} as a
@@ -1597,6 +1740,7 @@ community project, which grows and improves constantly.
 
               \begin{itemize}
 
+                % train {{{
                 \item
                   \texttt{train(X, y)}
 
@@ -1611,18 +1755,20 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{X}:
+                    Parameters: &\texttt{X}
                                 &matrix containing the
                                  observations of a training
                                  set.
                                  \\
-                                &\texttt{y}:
+                                &\texttt{y}
                                 &vector containing the
                                  labels of a training set.
                                  \\
                   \end{tabu}
                   \wo
+                % }}}
 
+                % category {{{
                 \item
                   \texttt{category(x, y, contains\_x)}
 
@@ -1636,13 +1782,13 @@ community project, which grows and improves constantly.
                   \\
 
                   \begin{tabu}{llX}
-                    Parameters: &\texttt{x}:
+                    Parameters: &\texttt{x}
                                 &an observation.
                                  \\
-                                &\texttt{y}:
+                                &\texttt{y}
                                 &a label.
                                  \\
-                                &\texttt{contains\_x}:
+                                &\texttt{contains\_x}
                                 &boolean whether
                                 $x$ was part of the
                                 training set passed to the
@@ -1652,30 +1798,497 @@ community project, which grows and improves constantly.
                                 behaviour if $x$ was part
                                 of the training set.
                                  \\\\
-                    Returns:    &\texttt{c}:
+                    Returns:    &\texttt{c}
                                 &a category for the
                                  example $z$.
                                  \\
                   \end{tabu}
                   \wo
+                % }}}
 
               \end{itemize}
+            % }}}
 
           \end{itemize}
+        % }}}
 
-        \item \texttt{vtx.VTXKNearestNeighbors}
+        % VTXKNearestNeighbors {{{
+        \item
+          \texttt{vtx.VTXKNearestNeighbors(**sklearn)}
+
+          Class implementing a Venn taxonomy based
+          on the $k$-nearest neighbors method for
+          classification (see Chapter~\ref{sec:venn}).
+          \\
+
+          The implementation is based on the scikit-learn
+          implementation \citep[see][]{sklearn_api}.
+          \\
+
+          \begin{tabu}{llX}
+            Paramters: &\texttt{**sklearn}
+                       &keyword arguments for the
+                        $k$-nearest neigbors implementation
+                        of scikit-learn.
+          \end{tabu}
+          \wo
+
+          Methods
+
+          See~\hyperref[itm:vtxbase]
+          {\texttt{vtx.base.VTXBase}}.
+          \\
+
+        % }}}
 
       \end{itemize}
+    % }}}
 
-    \item \texttt{CP}
+    % CP {{{
+    \item
+      \texttt{CP(A, epsilons, smoothed = False,
+        mondrian\_taxonomy = \_not\_mcp)}
+      \label{itm:cp}
 
-    \item \texttt{ICP}
+      Class implementing conformal prediction
+      (see Chapter~\ref{sec:cp}).
+      \\
 
-    \item \texttt{RRCM}
+      \begin{tabu}{llX}
+        Parameters: &\texttt{A}
+                    &instance of a nonconformity measure
+                     (Python object inheriting from
+                     \hyperref[itm:ncsbase]
+                     {\texttt{ncs.base.NCSBase}}).
+                     \\
+                    &\texttt{epsilons}
+                    &list containing significance levels.
+                     \\
+                    &\texttt{smoothed}
+                    &flag whether the predictor should use
+                     (\ref{eq:p1}) rather than
+                     (\ref{eq:p0}) for computing the
+                     p-value of an example.
+                     \\
+                   &\texttt{mondrian\_taxonomy}
+                   &callable for a $1$-taxonomy making the
+                    predictor a MCP
+                    (see Chapter~\ref{sec:mcp}).
+                    The default \texttt{\_not\_mcp} does
+                    not impose any taxonomy on the
+                    predictor, mapping each example to the
+                    same category.
+                    \\
+      \end{tabu}
+      \wo
 
-    \item \texttt{Venn}
+      Methods
 
-    \item \texttt{Meta}
+      \begin{itemize}
+
+        % train {{{
+        \item
+          \texttt{train(X, y, override = False)}
+          \label{itm:cp_train}
+
+          Wrapper for the train method of the nonconformity
+          measure \texttt{A} (see \\ \hyperref
+          [itm:ncsbase_train]
+          {\texttt{ncs.base.NCSBase.train}}).
+
+          \begin{tabu}{llX}
+            Parameters: &\texttt{X}
+                        &matrix containing the observations
+                         of a training set.
+                         \\
+                        &\texttt{y}
+                        &vector containing the labels of a
+                         training set.
+                         \\
+                        &\texttt{override}
+                        &flag whether the training set
+                         should be appended to the training
+                         set already given to the
+                         \texttt{CP} instance or override
+                         it.
+          \end{tabu}
+          \wo
+        % }}}
+
+        % predict {{{
+        \item
+          \texttt{predict(X)}
+          \label{itm:cp_predict}
+
+          \begin{tabu}{llX}
+            Paramters: &\texttt{X}
+                       &matrix containing observations
+                        which should be predicted.
+                        \\\\
+            Returns:   &\texttt{predictions}
+                       &the predictions for the
+                        observations provided by
+                        \texttt{X}.
+          \end{tabu}
+          \wo
+        % }}}
+
+        % predict_best {{{
+        \item
+          \texttt{predict\_best(X,
+                  significance\_levels = True)}
+          \label{itm:cp_predict_best}
+
+          Method for determining only the best label as
+          prediction.
+          \\
+
+          \begin{tabu}{lp{4cm}X}
+            Parameters: &\texttt{X}
+                        &matrix containing observations
+                         which should be predicted.
+                         \\
+                        &\texttt{significance\_levels}
+                        &flag whether the significance
+                         levels of the predictions should
+                         be returned, too.
+                         \\\\
+            Returns:    &\texttt{predictions,
+                                 significance\_levels}
+                        &a vector with the best labels,
+                         optionally a vector with the
+                         significance level of the best
+                         label.
+          \end{tabu}
+          \wo
+        % }}}
+
+        % score {{{
+        \item
+          \texttt{score(X, y)}
+          \label{itm:cp_score}
+
+          Generates metrics for the predictor.
+          \\
+
+          \begin{tabu}{llX}
+            Parameters: &\texttt{X}
+                        &matrix containing observations
+                         which should be predicted.
+                         \\
+                        &\texttt{y}
+                        &vector with the corresponding
+                         labels to the observations
+                         provided by \texttt{X}.
+                         \\\\
+            Returns:    &\texttt{metrics}
+                        &metrics for the predictor.
+          \end{tabu}
+          \wo
+        % }}}
+
+        % score_online {{{
+        \item
+          \texttt{score\_online(X, y)}
+          \label{itm:cp_score_online}
+
+          Iterates through a set of examples, predicts each
+          example and then trains the predictor with it
+          before predicting the next example. Generates
+          metrics for the predictor.
+          \\
+
+          \begin{tabu}{llX}
+            Parameters: &\texttt{X}
+                        &matrix containing observations
+                         which should be predicted.
+                         \\
+                        &\texttt{y}
+                        &vector with the corresponding
+                         labels to the observations
+                         provided by \texttt{X}.
+                         \\\\
+            Returns:    &\texttt{metrics}
+                        &metrics for the predictor.
+          \end{tabu}
+          \wo
+        % }}}
+
+        % p_vals {{{
+        \item
+          \texttt{p\_vals(X)}
+          \label{itm:cp_p_vals}
+
+          Computes the p-values for each observation from
+          a bag, paired with each label $y \in \textbf{Y}$.
+          \\
+
+          \begin{tabu}{llX}
+            Parameters: &\texttt{X}
+                        &matrix containing observations
+                         for which the p-values are
+                         generated.
+                         \\\\
+            Returns:    &\texttt{p\_vals}
+                        &a matrix of p-values for each
+                         observation from \texttt{X} paired
+                         with each label
+                         $y \in \textbf{Y}$.
+          \end{tabu}
+        % }}}
+
+      \end{itemize}
+    % }}}
+
+    % ICP {{{
+    \item
+      \texttt{ICP(A, epsilons, smoothed = False,
+        mondrian\_taxonomy = \_not\_mcp)}
+
+      Class implementing inductive conformal prediction
+      (see Chapter~\ref{sec:icp}).
+      \\
+
+      \begin{tabu}{llX}
+        Parameters: &&see~\hyperref[itm:cp]{\texttt{CP}}.
+      \end{tabu}
+      \wo
+      Methods
+
+      \begin{itemize}
+
+        % train {{{
+        \item
+          \texttt{train(X, y, override = False)}
+
+          See~\hyperref[itm:cp_train]{\texttt{CP.train}}.
+          \\
+        % }}}
+
+        % calibrate {{{
+        \item
+          \texttt{calibrate(X, y, override = False)}
+
+          Method for calibrating the ICP (see
+          Chapter~\ref{sec:icp}).
+          \\
+
+          \begin{tabu}{llX}
+            Parameters: &\texttt{X}
+                        &matrix containing the observations
+                         of a calibration set.
+                         \\
+                        &\texttt{y}
+                        &vector containing the labels of
+                         a calibration set.
+                         \\
+                        &\texttt{override}
+                        &flag whether the calibration set
+                         should be appended to the
+                         calibration set already given to
+                         the \texttt{ICP} instance or
+                         should override it.
+          \end{tabu}
+          \wo
+        % }}}
+
+        % predict {{{
+        \item
+          \texttt{predict(X)}
+
+          See~\hyperref[itm:cp_predict]
+          {\texttt{CP.predict}}.
+          \\
+        % }}}
+
+        % predict_best {{{
+        \item
+          \texttt{predict\_best(X, p\_vals = True)}
+
+          See~\hyperref[itm:cp_predict_best]
+          {\texttt{CP.predict\_best}}.
+          \\
+        % }}}
+
+        % score {{{
+        \item
+          \texttt{score(X, y)}
+
+          See~\hyperref[itm:cp_score]
+          {\texttt{CP.score}}.
+          \\
+        % }}}
+
+        % p_vals {{{
+        \item
+          \texttt{p\_vals(X)}
+
+          See~\hyperref[itm:cp_p_vals]
+          {\texttt{CP.p\_vals}}.
+        % }}}
+
+      \end{itemize}
+    % }}}
+
+    % RRCM {{{
+    \item
+      \texttt{RRCM(A, epsilons, convex\_hull = True)}
+
+      Class implementing the ridge regression confidence
+      machine (see Chapter~\ref{subsec:rrcm}).
+      \\
+
+      \begin{tabu}{llX}
+        Parameters: &\texttt{A}
+                    &instance of a nonconformity
+                     measure (Python object inheriting from
+                     \hyperref[itm:ncsbaseregressor]
+                     {\texttt{ncs.base.NCSBaseRegressor}}).
+                     \\
+                    &\texttt{epsilons}
+                    &list containing significance levels.
+                     \\
+                    &\texttt{convex\_hull}
+                    &flag whether the \texttt{RRCM}
+                     instance should return the convex hull
+                     as the prediction interval (see
+                     Chapter~\ref{subsec:rrcm}).
+      \end{tabu}
+
+      Methods
+
+      \begin{itemize}
+
+        % train {{{
+        \item
+          \texttt{train(X, y, override = False)}
+
+          See~\hyperref[itm:cp_train]
+          {\texttt{CP.train}}.
+          \\
+        % }}}
+
+        % predict {{{
+        \item
+          \texttt{predict(X)}
+
+          See~\hyperref[itm:cp_predict]
+          {\texttt{CP.predict}}.
+          \\
+        % }}}
+
+        % score {{{
+        \item
+          \texttt{score(X, y)}
+
+          See~\hyperref[itm:cp_score]
+          {\texttt{CP.score}}.
+          \\
+        % }}}
+
+        % score_online {{{
+        \item
+          \texttt{score\_online(X, y)}
+
+          See~\hyperref[itm:cp_score_online]
+          {\texttt{CP.score\_online}}.
+        % }}}
+
+      \end{itemize}
+    % }}}
+
+    % Venn {{{
+    \item
+      \texttt{Venn(venn\_taxonomy)}
+
+      Class implementing Venn prediction
+      (see Chapter~\ref{sec:venn}).
+      \\
+
+      \begin{tabu}{llX}
+        Parameters: &\texttt{venn\_taxonomy}
+                    &instance of a Venn taxonomy (Python
+                     object inheriting from
+                     \hyperref[itm:vtxbase]
+                     {\texttt{vtx.base.VTXBase}}).
+      \end{tabu}
+
+      Methods
+
+      \begin{itemize}
+
+        % train {{{
+        \item
+          \texttt{train(X, y, override = False)}
+
+          See~\hyperref[itm:cp_train]
+          {\texttt{CP.train}}.
+          \\
+        % }}}
+
+        % predict {{{
+        \item
+          \texttt{predict(X, proba = True)}
+        % }}}
+
+        % score {{{
+        \item
+          \texttt{score(X, y)}
+
+          See~\hyperref[itm:cp_score]
+          {\texttt{CP.score}}.
+          \\
+        % }}}
+
+        % score_online {{{
+        \item
+          \texttt{score\_online(X, y)}
+
+          See~\hyperref[itm:cp_score_online]
+          {\texttt{CP.score\_online}}.
+        % }}}
+
+      \end{itemize}
+    % }}}
+
+    % Meta {{{
+    \item
+      \texttt{Meta(M\_train, M\_predict, B\_train,
+              B\_predict, epsilons)}
+
+      Class implementing meta-conformal prediction
+      (see Chapter~\ref{sec:meta}).
+      \\
+
+      Methods
+
+      \begin{itemize}
+
+        % train {{{
+        \item
+          \texttt{train(X, y, k\_folds, plot = False)}
+        % }}}
+
+        % predict {{{
+        \item
+          \texttt{predict(X)}
+
+          See~\hyperref[itm:cp_predict]
+          {\texttt{CP.predict}}.
+          \\
+        % }}}
+
+        % score {{{
+        \item
+          \texttt{score(X, y)}
+
+          See~\hyperref[itm:cp_score]
+          {\texttt{CP.score}}.
+          \\
+        % }}}
+
+      \end{itemize}
+    % }}}
 
   \end{itemize}
 
@@ -1683,6 +2296,7 @@ community project, which grows and improves constantly.
   % ref text <-> appendix
 
   \lstset{%
+    basicstyle=\footnotesize,
     numbers = left,
     firstnumber = 0,
     stepnumber = 5,
@@ -1713,8 +2327,6 @@ community project, which grows and improves constantly.
   \subsection{\texttt{Venn}}
 
   \subsection{\texttt{Meta}}
-
-  \subsection{Implementing \texttt{NCSScore}}
 
 \end{appendices}
 
