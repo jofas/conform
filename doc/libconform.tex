@@ -691,8 +691,8 @@ M_{j}^\prime =
     0             &\quad \text{if } j=0
   \end{cases},
 \end{align*}
-which takes only $\mathcal{O}(n)$, making the sorting the
-$u_i$'s and $v_i$'s the most complex task
+which takes only $\mathcal{O}(n)$, making sorting the
+$u_i$ and $v_i$ values the most complex task
 \citep[see][Chapter 2.3]{alrw}.
 
 The \texttt{RRCM} implementation takes a flag during
@@ -775,12 +775,20 @@ $\alpha_i$ gets computed:
   i=m+1,\dots,n.
 \end{align}
 
-Now, for an incoming example $x_g, g \in [n+1,\infty)$ set
-$z_{g} := (x_g, y)$ for each $y \in \textbf{Y}$ and compute
-the nonconformity score $\alpha_g$ like (\ref{eq:a_icp}).
-The p-value of $z_{g}$ is:
+Now, for an incoming example $x_{n+l}$ set
+$z_{n+l} := (x_{n+l}, y)$ for each $y \in \textbf{Y}$ and
+compute the nonconformity score $\alpha_{n+l}$
+like (\ref{eq:a_icp}).
+The p-value of $z_{n+l}$ is
 \begin{align*}
-  \frac{|\{i = m+1,\dots,n: \alpha_i \geq \alpha_g\}|}
+  \frac{|\{i = m+1,\dots,n: \alpha_i \geq \alpha_{n+l}\}|}
+       {n-m+1},
+\end{align*}
+or the smoothed version
+\begin{align*}
+  \frac{|\{i=m+1,\dots,n: \alpha_i > \alpha_{n+l}\}|
+        + \tau_{n+l}
+        |\{i=m+1,\dots,n: \alpha_i = \alpha_{n+l}\}|}
        {n-m+1}
 \end{align*}
 \citep[see][]{papadopoulos_et_al_2007}.
@@ -794,7 +802,7 @@ found in \citet[Chapters 4.3, 4.4]{alrw}.
 
 \subsection*{Notes on the implementation}
 
-\texttt{ICP} is the class implemention inductive conformal
+\texttt{ICP} is the class implementing inductive conformal
 prediction. It provides the same API as \texttt{CP},
 except \texttt{score\_online}. It has an additional method
 \texttt{calibrate} for generating the nonconformity scores
@@ -807,18 +815,19 @@ of classes inheriting from \texttt{NCSBase}) as does
 Currently the nonconformity scores from the calibration set
 are saved internally as a vector. In future releases this
 will change to an optimized data structure for searching,
-e.g.\ a red-black tree.
+e.g.\ a red-black tree \citep[see][]{cormen}.
 
 \section{Mondrian or conditional (inductive) conformal
          predictors}
 \label{sec:mcp}
 
 The property of validity under the exchangeablity
-assumption can be further optimized with mondrian or
+assumption can be further optimized with Mondrian or
 conditional (inductive) conformal prediction (MCP).
 In \citet[Chapter 4.5]{alrw} this form of conformal
-prediction is called mondrian, in \citet[Chapter 2]{cprml}
-it is called conditional.
+prediction is called Mondrian, in \citet[Chapter 2]{cprml}
+it is called conditional, the only difference being the
+underlying taxonomy, which will be discussed below.
 
 An example from \citet[Chapter 4.5]{alrw} makes it clear
 why the stronger form of validity provided by MCP can be
@@ -831,10 +840,11 @@ digits.
 The observations are a $16 \times 16$ matrix where each
 cell is in the interval of $(-1,1)$ and the labels
 obviously are 0 to 9 \citep[see][]{lecun_et_al_1989}.
-They found out, that while overall the validity (the error
-frequency was nearly equal to $\epsilon=0.05$) held, the
-smoothed conformal predictor had an error rate of $11.7\%$
-on examples with the label ``5''.
+
+The authors found out, that while overall the validity held
+(the error frequency was nearly equal to $\epsilon=0.05$),
+the smoothed conformal predictor had an error rate of
+$11.7\%$ on examples with the label ``5''.
 The smoothed conformal predictor masked its bad performance
 on examples with the label ``5'' simply by predicting other
 labels with an error rate of less than $\epsilon = 0.05$,
@@ -843,12 +853,12 @@ e.g.\ for the label ``0'' the error rate was below $0.01$
 
 The idea of MCP is to partition the examples into a
 discrete and finite set $\textbf{K}$ of categories
-$k_i \in \textbf{K}$ and to achieve conditional validity in
+$k \in \textbf{K}$ and to achieve conditional validity in
 each category.
 For the partitioning a measurable function called a
 taxonomy is used.
 In \citet[Chapter 4.5]{alrw} the taxonomy is called
-mondrian taxonomy and is defined as:
+Mondrian taxonomy and is defined as:
 \begin{align*}
   \kappa: \mathbb{N} \times \textbf{Z} \rightarrow
   \textbf{K},
@@ -859,7 +869,7 @@ $n$-taxonomy:
   K_n: \textbf{Z}^n \rightarrow \textbf{K}^n.
 \end{align*}
 
-The mondrian taxonomy $\kappa$ takes the index $i$ of an
+The Mondrian taxonomy $\kappa$ takes the index $i$ of an
 example $z_i$ from a sequence $z_1,\dots,z_n$ and $z_i$ as
 its input and maps it to a category while the $n$-taxonomy
 $K_n$ takes a sequence of examples with a size of $n$ and
@@ -898,7 +908,7 @@ exchangeability assumption \citep[see][]{alrw, cprml}.
 
 There is no direct implementation for MCP, \libconform{}
 rather leverages the fact that CP and ICP are just a
-special form of mondrian (inductive) conformal prediction,
+special form of Mondrian (inductive) conformal prediction,
 where $|\textbf{K}| = 1$, which means all examples are in
 the same category.
 \texttt{CP} and \texttt{ICP} can take an argument during
@@ -921,7 +931,7 @@ version to $K_n$ for more flexibility.
 \\
 
 \noindent
-\citet[Chapter 4.5]{alrw} defines mondrian nonconformity
+\citet[Chapter 4.5]{alrw} defines Mondrian nonconformity
 measures
 \begin{align*}
   A: \textbf{K}^* \times \textbf{Z}^* \times
@@ -929,7 +939,7 @@ measures
 \end{align*}
 which add the category to each example in order to compute
 the nonconformity scores.
-Currently \libconform{} does not have an API for mondrian
+Currently \libconform{} does not have an API for Mondrian
 nonconformity measures, which could change in
 future releases.
 
@@ -1008,7 +1018,7 @@ multi-probability prediction $\{P_y|y\in \textbf{Y}\}$
 \citep[see][Chapter 6.3]{alrw}.
 
 Actually, in the example in \citet[Chapter 6.3]{alrw},
-instead of returning $\{P_y|y\in \textbf{Y}\}$ the Venn
+instead of returning $\{P_y|y \in \textbf{Y}\}$ the Venn
 predictor returns the interval of the convex hull of the
 multi-probability prediction:
 $[min\ M_{best},\ max\ M_{best}]$.
@@ -1023,7 +1033,7 @@ Venn prediction---like described above---is implemented as
 \texttt{CP} does. The only difference is that
 \texttt{Venn}'s \texttt{predict} method takes a flag
 \texttt{proba}. If \texttt{proba} is off only the label
-prediction is returned. On the other hand, it
+prediction is returned. On the other hand, if
 \texttt{proba} is set, the label prediction and the error
 probability interval is returned.
 
@@ -1049,7 +1059,7 @@ if the uncertainty of a new observation is too high the
 classifier does not give a prediction, it rejects it
 \citep[see][]{vanderlooy_et_al_2009}.
 
-CP is easily modified to an abstaining classifier.
+CP is easily modified to produce abstaining classifiers.
 We could simply predict the label with the highest
 p-value and if its significance level (the second highest
 p-value, see Chapter~\ref{sec:cp}) is above a certain
@@ -1068,6 +1078,8 @@ $M$ as a meta-classifier in combination with $B$, so we can
 add a certainty measure to a prediction otherwise without
 any likelihood indicator.
 \textit{B:M} is called the combined classifier.
+
+\subsection*{Meta-classifier instances}
 
 The meta-classifier is a binary classifier that predicts
 new observations based on the meta data of the base
@@ -1091,9 +1103,9 @@ is greater than $T$ we say the prediction of $B$ is
 trustworthy and is returned, otherwise \textit{B:M}
 abstains from making the prediction
 \citep[see][]{smirnov_et_al_2009}.
-\\
 
-\noindent
+\subsection*{Performance metrics for binary classifiers}
+
 Metrics for the performance of a binary classifier can
 be given by a confusion matrix (see Figure~\ref{fig:cm}).
 For a test set the confusion matrix counts the predicted
@@ -1153,7 +1165,7 @@ From the confusion matrix we can derive interesting metrics
 for the binary classifier, the most important being the
 accuracy $A$, the precision rate $P$:
 \begin{align*}
-A = \frac{TP + TN}{TP + TN + FP + FN},\
+A = \frac{TP + TN}{TP + TN + FP + FN};\
 P = \frac{TP}{TP + FP},
 \end{align*}
 the true positive rate $TPr$ and the false positive rate
@@ -1167,6 +1179,9 @@ rejection rate
 \begin{align*}
 R = \frac{RP + RN}{RP + RU + TP + TN + FP + FN}.
 \end{align*}
+
+\subsection*{Constructing the combined classifier
+             \textit{B:M}}
 
 In order to construct a combined classifier \textit{B:M}
 we first need the meta data.
@@ -1283,7 +1298,7 @@ training operation of \textit{B:M} is over.
 
 \libconform{} provides the \texttt{Meta} class for
 combined classifiers. In order to offer the most
-flexibility for developers \texttt{Meta} only takes two
+flexibility for developers, \texttt{Meta} only takes two
 interfaces to each classifier $B$ and $M$, one being a
 function used for training the classifier, the other being
 for predicting. This way \texttt{Meta} does not take the
@@ -1308,13 +1323,16 @@ still missing, including:
 
 \begin{itemize}
 
+  \item cross-conformal prediction
+        \citep[see][]{vovk_2012}
+
   \item aggregated conformal prediction
         \citep[see][]{carlsson_et_al_2014}
 
   \item inductive ridge regression confidence machine
         \citep[see][]{papadopoulos_et_al_2002}
 
-  \item Venn abers predictors
+  \item Venn abers prediction
         \citep[see][]{vovk_et_al_2014}
 
   \item more nonconformity scores which come out of the box
@@ -1329,7 +1347,7 @@ extensible API and already implements some of the main
 algorithms of the conformal prediction framework.
 
 The goal for \libconform{} is to be one day
-the go to implementation of the conformal prediction
+the go-to implementation of the conformal prediction
 framework for Python. Hopefully it can attract newcomers to
 use conformal prediction for their needs and will become a
 community project, which grows and improves constantly.
@@ -1425,8 +1443,8 @@ community project, which grows and improves constantly.
                   nonconformity measure.
                   \\
 
-                  Computes the scores for each example
-                  from a bag.
+                  Computes the nonconformity scores for
+                  each example from a bag.
                   \\
 
                   \begin{tabu}{llX}
@@ -1475,9 +1493,9 @@ community project, which grows and improves constantly.
                   observations \texttt{X}.
                   \\
 
-                  This method computes the score
-                  for each new example $z_g := (x_g, y),
-                  y \in \textbf{Y}$.
+                  This method computes the nonconformity
+                  score for each new example
+                  $z_g := (x_g, y), y \in \textbf{Y}$.
                   \\
 
                   \begin{tabu}{llX}
@@ -1598,7 +1616,7 @@ community project, which grows and improves constantly.
                   observations \texttt{X}.
                   \\
 
-                  This method computes the score for a
+                  Computes $a$ and $b$ for a
                   new observation which should be
                   predicted.
                   \\
@@ -1663,6 +1681,7 @@ community project, which grows and improves constantly.
           The score for an example $z := (x,y)$ is computed
           as $\frac{d^{y}_k}{d^{-y}_k}$
           (see Chapter~\ref{subsec:ncs}).
+          \\
 
           The implementation is based on the scikit-learn
           implementation \citep[see][]{sklearn_api}.
@@ -1724,7 +1743,7 @@ community project, which grows and improves constantly.
           The nonconformity score is computed via the
           output neurons and how their outputs defer.
           For more on nonconformity scores based on neural
-          nets see \citet[see][Chapter 4]
+          nets see \citet[Chapter 4]
           {papadopoulos_et_al_2007,alrw}.
           \\
 
