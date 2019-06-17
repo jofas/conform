@@ -15,7 +15,11 @@ class NCSDecisionTree(NCSBase):
         for (n_, y_) in zip(nodes, y):
             val = self.clf.tree_.value[n_][0]
             g = self.clf.tree_.n_node_samples[n_]
-            res.append(1 - val[y_] / g)
+            try:
+                score = 1 - val[y_] / g
+                res.append(score)
+            except:
+                res.append(0.0)
         return res
 
     def score(self, x, labels):

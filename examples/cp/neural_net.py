@@ -35,6 +35,13 @@ labels = np.unique(y)
 
 y = np.array([[0. if j != v else 1.0 for j in labels] for v in y])
 
+# randomly permute X, y
+indices = np.arange(len(X))
+np.random.shuffle(indices)
+
+X = X[indices]
+y = y[indices]
+
 X_train, y_train = X[:-25], y[:-25]
 X_test,  y_test  = X[-25:], y[-25:]
 
