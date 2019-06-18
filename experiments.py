@@ -536,6 +536,44 @@ def meta():
     print(res)
 # }}}
 
+# abstain {{{
+def abstain():
+    X, y = load_usps_random()
+
+    split = int(X.shape[0] / 5)
+
+    X_train = X[:4*split]
+    y_train = y[:4*split]
+
+    X_test  = X[4*split:]
+    y_test  = y[4*split:]
+
+    epsilons = [0.005, 0.01, 0.025, 0.05, 0.1]
+
+    ncs = NCSKNearestNeighbors(n_neighbors=1)
+    cp = CP( ncs, epsilons )
+    #       , mondrian_taxonomy = mondrian_each_label )
+
+    cp.train(X_train, y_train)
+
+    res = cp.score(X_test, y_test)
+    print(res)
+
+    res = cp.score_abstain(X_test, y_test)
+    print(res)
+
+    vtx = VTXKNearestNeighbors(n_neighbors=1)
+    clf = Venn(vtx)
+
+    clf.train(X_train, y_train)
+
+    res = clf.score(X_test, y_test)
+    print(res)
+
+    res = clf.score_abstain(X_test, y_test, epsilons)
+    print(res)
+# }}}
+
 def main():
     #oy_knn()
     #oy_neural_net()
@@ -544,11 +582,12 @@ def main():
     #venn()
     #knn_regression()
     #usps_nc1nn()
-    meta()
+    #meta()
 
     #knn()
     #neural_net()
     #descision_tree()
+    abstain()
 
 if __name__ == '__main__':
     main()

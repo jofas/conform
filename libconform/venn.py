@@ -2,7 +2,7 @@ import numpy as np
 
 from infinity import inf
 
-from .metrics import VennMetrics
+from .metrics import VennMetrics, AbstainMetrics
 from .vtx.base import VTXBase
 from . import util
 
@@ -96,6 +96,19 @@ class Venn:
 
         for p_, bounds, y_ in zip(*predicted, y):
             res.update(p_, self.labels.reverse(y_), bounds)
+
+        return res
+
+    def score_abstain(self, X, y, epsilons):
+        X, y = util.format(X, y, self.labels)
+
+        res = AbstainMetrics(epsilons)
+        pred, bounds = self.predict(X)
+
+        for p_, b_, y_ in zip(pred, bounds, y):
+            res.update(
+                p_, b_[1], self.labels.reverse(y_), k = 0
+            )
 
         return res
 

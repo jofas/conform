@@ -2,11 +2,9 @@
 
 ## TODO
 
-- (Mondrian) Abstentation (as Mixin using epsilons) and
-  VennAbstentation
-
-- Venn predict flag for returning single probability 
-  (min, max, mean, median, width (?))
+- Venn predict flag for returning different probabilities
+  (min, max, mean, median, width (?), 
+   prediction set, prediction interval)
 
 ## Possible features/changes
 

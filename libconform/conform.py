@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-from .metrics import CPMetrics
+from .metrics import CPMetrics, AbstainMetrics
 from .ncs.base import NCSBase
 from . import util
 
@@ -105,6 +105,18 @@ class _CPBase:
         for p_, x_, y_ in zip(predicted, X, y):
             k = self.mondrian_taxonomy(x_, y_)
             res.update(p_, self.labels.reverse(y_), k)
+
+        return res
+
+    def score_abstain(self, X, y):
+        X, y = util.format(X, y, self.labels)
+
+        res = AbstainMetrics(self.epsilons)
+        pred, epsilons = self.predict_best(X)
+
+        for p_, e_, x_, y_ in zip(pred, epsilons, X, y):
+            k = self.mondrian_taxonomy(x_, y_)
+            res.update(p_, e_, self.labels.reverse(y_), k)
 
         return res
 
