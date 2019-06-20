@@ -574,7 +574,75 @@ def abstain():
     print(res)
 # }}}
 
+def bt():
+    from sklearn.model_selection import KFold
+    import loss
+    import matplotlib.pyplot as plt
+
+    X, y = load_usps_random()
+
+    ncs = NCSKNearestNeighbors(n_neighbors=1)
+    cp = CP(ncs, [])
+
+    kf = KFold(n_splits=5)
+    for idx_train, idx_test in kf.split(X):
+        X_train, y_train = X[idx_train], y[idx_train]
+        X_test,  y_test  = X[idx_test],  y[idx_test]
+
+        cp.train(X_train, y_train, override=True)
+
+        A = zip(y_test, *cp.predict_best(X_test))
+
+        A = sorted(A, key=lambda x: x[-1])
+
+        loss_pts = []; err_pts = []
+
+        Err = 0; Dev = 0.0; Loss = 0.0
+        iso_err = 0.0; iso_loss_ = 0.0
+        for i, (y_, p_, sig_lvl_) in enumerate(A):
+
+            # acc metrics
+            if y_ != p_: Err += 1
+
+            err = Err / (i + 1)
+
+            if iso_err > err: err = iso_err
+            else: iso_err = err
+
+            #Dev += sig_lvl_ - err
+            #dev = Dev / (i + 1)
+
+            #rejected = 1 - ( (i + 1) / len(A) )
+
+            # loss metrics
+            Loss += loss.squared(p_, y_)
+
+            loss_ = Loss / (i + 1)
+
+            if iso_loss_ > loss_: loss_ = iso_loss_
+            else: iso_loss_ = loss_
+
+            loss_pts.append([sig_lvl_, loss_])
+            err_pts.append([sig_lvl_, err])
+
+        loss_pts = np.array(loss_pts)
+        err_pts  = np.array(err_pts)
+
+        # plot loss and acc
+        fig, ax = plt.subplots(1,2)
+
+        ax[0].plot(loss_pts[:,0], loss_pts[:,1], color="b")
+        ax[0].plot(err_pts[:,0], err_pts[:,1], color="r")
+        ax[0].plot(err_pts[:,0], err_pts[:,0], color="g")
+
+        ax[1].scatter(err_pts[:,1], loss_pts[:,1])
+
+        plt.show()
+        break
+
 def main():
+    bt()
+
     #oy_knn()
     #oy_neural_net()
     #oy_venn()
@@ -587,7 +655,7 @@ def main():
     #knn()
     #neural_net()
     #descision_tree()
-    abstain()
+    #abstain()
 
 if __name__ == '__main__':
     main()
