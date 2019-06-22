@@ -574,16 +574,98 @@ def abstain():
     print(res)
 # }}}
 
+from sklearn.model_selection import KFold
+from infinity import inf
+import matplotlib.pyplot as plt
+
+class AbstainPredictor:
+    def __init__(self, clf, reward):
+        self.clf        = clf
+        self.reward     = reward
+        self.T          = 1.0
+        self.Reward_pts = []
+
+    def train(self, X, y):
+        self.clf.train(X, y)
+
+    def calibrate(self, X, y):
+        A = zip(y, *self.clf.predict_best(X))
+        A = sorted(A, key=lambda x: x[-1])
+
+        Reward     = 0.0
+        max_reward = -inf
+
+        for y_, p_, sig_lvl_ in A:
+            Reward += self.reward(p_, y_)
+            self.Reward_pts.append([sig_lvl_, Reward])
+
+            if Reward > max_reward:
+                max_reward = Reward
+                self.T     = sig_lvl_
+
+    def score(self, X, y):
+        A = zip(y, *self.clf.predict_best(X))
+        A = sorted(A, key=lambda x: x[-1])
+
+        Reward = 0.0
+        Reward_pts = []
+
+        max_reward, T = -inf, 1.0
+
+        T_reward = 0.0
+
+        for y_, p_, sig_lvl_ in A:
+            Reward += self.reward(p_, y_)
+            Reward_pts.append([sig_lvl_, Reward])
+
+            if sig_lvl_ <= self.T: T_reward = Reward
+
+            if Reward > max_reward:
+                max_reward = Reward
+                T          = sig_lvl_
+
+        Reward_pts       = np.array(Reward_pts)
+        Reward_pts_train = np.array(self.Reward_pts)
+
+        print(max_reward, T_reward)
+        print(self.T, T)
+
+        plt.plot( Reward_pts[:,0]
+                , Reward_pts[:,1]
+                , c = "r" )
+        plt.plot( Reward_pts_train[:,0]
+                , Reward_pts_train[:,1]
+                , c = "b" )
+        plt.show()
+
 def bt():
-    from sklearn.model_selection import KFold
-    import loss
-    import matplotlib.pyplot as plt
+    import loss as loss_module
 
     X, y = load_usps_random()
+
+    X_train, y_train = X[:-2400],      y[:-2400]
+    X_cal,   y_cal   = X[-2400:-1200], y[-2400:-1200]
+    X_test,  y_test  = X[-1200:],      y[-1200:]
 
     ncs = NCSKNearestNeighbors(n_neighbors=1)
     cp = CP(ncs, [])
 
+    gain_fn = lambda pred, true: 1.0 if pred == true \
+        else 0.0
+
+    loss_fn = lambda pred,true: \
+        loss_module.squared(pred, true)
+
+    reward_fn = lambda pred, true: \
+        gain_fn(pred, true) - loss_fn(pred, true)
+
+    clf = AbstainPredictor(cp, reward_fn)
+    clf.train(X_train, y_train)
+    clf.calibrate(X_cal, y_cal)
+
+    clf.score(X_test, y_test)
+
+    """
     kf = KFold(n_splits=5)
     for idx_train, idx_test in kf.split(X):
         X_train, y_train = X[idx_train], y[idx_train]
@@ -595,19 +677,29 @@ def bt():
 
         A = sorted(A, key=lambda x: x[-1])
 
-        loss_pts = []; err_pts = []
+        gain_fn = lambda pred, true: 1.0 if pred == true \
+            else 0.0
 
-        Err = 0; Dev = 0.0; Loss = 0.0
-        iso_err = 0.0; iso_loss_ = 0.0
+        loss_fn = lambda pred,true: \
+            loss_module.squared(pred, true)
+
+        Gain_pts, Loss_pts, Reward_pts = [], [], []
+        gain_pts, loss_pts, reward_pts = [], [], []
+        Err_pts, err_pts = [], []
+
+        Gain, Loss, Reward = 0.0, 0.0, 0.0
+        Err = 0
+        #; Dev = 0.0; Loss = 0.0
+        #iso_err = 0.0; iso_loss_ = 0.0
         for i, (y_, p_, sig_lvl_) in enumerate(A):
 
-            # acc metrics
             if y_ != p_: Err += 1
-
             err = Err / (i + 1)
+            Err_pts.append([sig_lvl_, Err])
+            err_pts.append([sig_lvl_, err])
 
-            if iso_err > err: err = iso_err
-            else: iso_err = err
+            #if iso_err > err: err = iso_err
+            #else: iso_err = err
 
             #Dev += sig_lvl_ - err
             #dev = Dev / (i + 1)
@@ -615,30 +707,74 @@ def bt():
             #rejected = 1 - ( (i + 1) / len(A) )
 
             # loss metrics
-            Loss += loss.squared(p_, y_)
+            #Loss += loss.squared(p_, y_)
 
-            loss_ = Loss / (i + 1)
+            #loss_ = Loss / (i + 1)
 
-            if iso_loss_ > loss_: loss_ = iso_loss_
-            else: iso_loss_ = loss_
+            #if iso_loss_ > loss_: loss_ = iso_loss_
+            #else: iso_loss_ = loss_
 
-            loss_pts.append([sig_lvl_, loss_])
-            err_pts.append([sig_lvl_, err])
+            Gain += gain_fn(p_, y_)
+            gain = Gain / (i + 1)
+            Gain_pts.append([sig_lvl_, Gain])
+            gain_pts.append([sig_lvl_, gain])
 
+            Loss += loss_fn(p_, y_)
+            loss = Loss / (i + 1)
+            Loss_pts.append([sig_lvl_, Loss])
+            loss_pts.append([sig_lvl_, loss])
+
+            Reward = Gain - Loss
+            reward = Reward / (i + 1)
+            Reward_pts.append([sig_lvl_, Reward])
+            reward_pts.append([sig_lvl_, reward])
+
+
+        gain_pts = np.array(gain_pts)
         loss_pts = np.array(loss_pts)
+        reward_pts = np.array(reward_pts)
         err_pts  = np.array(err_pts)
 
+        Gain_pts = np.array(Gain_pts)
+        Loss_pts = np.array(Loss_pts)
+        Reward_pts = np.array(Reward_pts)
+        Err_pts  = np.array(Err_pts)
+
+        from scipy.stats import spearmanr
+
+        corr = spearmanr(Reward_pts[:,1], Err_pts[:,1])
+        print(corr)
+
         # plot loss and acc
-        fig, ax = plt.subplots(1,2)
+        fig, ax = plt.subplots(2,2)
 
-        ax[0].plot(loss_pts[:,0], loss_pts[:,1], color="b")
-        ax[0].plot(err_pts[:,0], err_pts[:,1], color="r")
-        ax[0].plot(err_pts[:,0], err_pts[:,0], color="g")
+        ax[0,0].plot(gain_pts[:,0], gain_pts[:,1], color="g")
+        ax[0,0].plot(loss_pts[:,0], loss_pts[:,1], color="r")
+        ax[0,0].plot( reward_pts[:,0], reward_pts[:,1]
+                  , color="b" )
 
-        ax[1].scatter(err_pts[:,1], loss_pts[:,1])
+        ax[0,0].plot( err_pts[:,0], err_pts[:,1], color="y"
+                  , label="err" )
+        ax[0,0].plot( err_pts[:,0], err_pts[:,0], color="c"
+                  , label="err expected" )
+
+        ax[0,1].scatter(err_pts[:,1], reward_pts[:,1],s=0.1)
+
+        ax[1,0].plot(Gain_pts[:,0], Gain_pts[:,1], color="g")
+        ax[1,0].plot(Loss_pts[:,0], Loss_pts[:,1], color="r")
+        ax[1,0].plot( Reward_pts[:,0], Reward_pts[:,1]
+                  , color="b" )
+
+        ax[1,0].plot( Err_pts[:,0], Err_pts[:,1], color="y"
+                  , label="Err" )
+        ax[1,0].plot( Err_pts[:,0], Err_pts[:,0], color="c"
+                  , label="Err expected" )
+
+        ax[1,1].scatter(Err_pts[:,1], Reward_pts[:,1],s=0.1)
 
         plt.show()
         break
+    """
 
 def main():
     bt()
