@@ -577,6 +577,7 @@ def abstain():
 from sklearn.model_selection import KFold
 from infinity import inf
 import matplotlib.pyplot as plt
+from numpy.polynomial.polynomial import polyfit
 
 class AbstainPredictor:
     def __init__(self, clf, reward):
@@ -595,13 +596,25 @@ class AbstainPredictor:
         Reward     = 0.0
         max_reward = -inf
 
+        prev_sig_lvl_ = inf
+
         for y_, p_, sig_lvl_ in A:
+            if prev_sig_lvl_ == inf:
+                prev_sig_lvl_ = sig_lvl_
+
+            elif prev_sig_lvl_ != sig_lvl_:
+                self.Reward_pts.append(
+                    [prev_sig_lvl_, Reward]
+                )
+                prev_sig_lvl_ = sig_lvl_
+
             Reward += self.reward(p_, y_)
-            self.Reward_pts.append([sig_lvl_, Reward])
 
             if Reward > max_reward:
                 max_reward = Reward
                 self.T     = sig_lvl_
+
+        self.Reward_pts.append([prev_sig_lvl_, Reward])
 
     def score(self, X, y):
         A = zip(y, *self.clf.predict_best(X))
@@ -614,9 +627,17 @@ class AbstainPredictor:
 
         T_reward = 0.0
 
+        prev_sig_lvl_ = inf
+
         for y_, p_, sig_lvl_ in A:
+            if prev_sig_lvl_ == inf:
+                prev_sig_lvl_ = sig_lvl_
+
+            elif prev_sig_lvl_ != sig_lvl_:
+                Reward_pts.append([prev_sig_lvl_, Reward])
+                prev_sig_lvl_ = sig_lvl_
+
             Reward += self.reward(p_, y_)
-            Reward_pts.append([sig_lvl_, Reward])
 
             if sig_lvl_ <= self.T: T_reward = Reward
 
@@ -624,18 +645,50 @@ class AbstainPredictor:
                 max_reward = Reward
                 T          = sig_lvl_
 
+        Reward_pts.append([prev_sig_lvl_, Reward])
+
         Reward_pts       = np.array(Reward_pts)
         Reward_pts_train = np.array(self.Reward_pts)
 
-        print(max_reward, T_reward)
+        coeffs_quad = polyfit( Reward_pts_train[:,0]
+                             , Reward_pts_train[:,1]
+                             , 2 )
+
+        coeffs_cube = polyfit( Reward_pts_train[:,0]
+                             , Reward_pts_train[:,1]
+                             , 3 )
+
+        quad_f = lambda x: coeffs_quad[0] \
+                         + coeffs_quad[1] * x \
+                         + coeffs_quad[2] * (x ** 2)
+
+        cube_f = lambda x: coeffs_cube[0] \
+                         + coeffs_cube[1] * x \
+                         + coeffs_cube[2] * (x ** 2) \
+                         + coeffs_cube[3] * (x ** 3)
+
+        x_ = [0.0]
+        while x_[-1] < Reward_pts_train[-1,0]:
+            x_.append(x_[-1] + 1e-4)
+
+        quad_pts = np.array([[x, quad_f(x)] for x in x_])
+        cube_pts = np.array([[x, cube_f(x)] for x in x_])
+
+        print(max_reward, T_reward, T_reward / max_reward)
         print(self.T, T)
 
-        plt.plot( Reward_pts[:,0]
-                , Reward_pts[:,1]
-                , c = "r" )
-        plt.plot( Reward_pts_train[:,0]
-                , Reward_pts_train[:,1]
-                , c = "b" )
+        fig, ax = plt.subplots(1,1)
+
+        ax.plot( Reward_pts[:,0]
+                    , Reward_pts[:,1]
+                    , c = "r" )
+        ax.plot( Reward_pts_train[:,0]
+                    , Reward_pts_train[:,1]
+                    , c = "b" )
+
+        ax.plot(quad_pts[:,0], quad_pts[:,1], c="c")
+        ax.plot(cube_pts[:,0], cube_pts[:,1], c="g")
+
         plt.show()
 
 def bt():

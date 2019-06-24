@@ -1,0 +1,411 @@
+\documentclass{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage{stmaryrd}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{graphics}
+
+%\usetheme{Warsaw}
+
+\usetikzlibrary{%
+    arrows,
+    arrows.meta,
+    decorations,
+    backgrounds,
+    positioning,
+    fit,
+    petri,
+    shadows,
+    datavisualization.formats.functions,
+    calc,
+    shapes,
+    shapes.multipart,
+    matrix
+}
+
+\def\version{\texttt{v0.1.0}}
+\def\libconform{\texttt{libconform}}
+
+\title{\libconform{} \version: a Python library for
+       conformal prediction}
+
+\author{Jonas Fa{\ss}bender}
+
+\date{}
+
+\def\setmeshr#1{
+  \def\meshr{#1}
+}
+\def\meshr{1.25pt}
+
+\pgfooclass{meshgrid visualizer}{
+  % Stores the name of the visualizer. This is needed for
+  % filtering and configuration
+  \attribute name;
+
+  % The constructor. Just setup the attribute.
+  \method meshgrid visualizer(#1) { \pgfooset{name}{#1} }
+
+  % Connect to visualize signal.
+  \method default connects() {
+    \pgfoothis.get handle(\me)
+    \pgfkeysvalueof{/pgf/data visualization/obj}.connect(
+      \me,visualize,visualize datapoint signal)
+  }
+
+  % This method is invoked for each data point. It checks
+  % whether the data point belongs to the correct
+  % visualizer and, if so, calls the macro \dovisualization
+  % to do the actual visualization.
+  \method visualize() {
+    \pgfdvfilterpassedtrue
+    \pgfdvnamedvisualizerfilter
+    \ifpgfdvfilterpassed
+      \dovisualization
+    \fi
+  }
+}
+
+\def\dovisualization{
+  \pgfkeysvalueof{%
+    /data point/\pgfoovalueof{name}/execute at begin%
+  }
+
+  \pgfpointdvdatapoint
+  \pgfgetlastxy{\macrox}{\macroy}
+
+  \pgfmathsetmacro\xlow {\macrox - \meshr}
+  \pgfmathsetmacro\ylow {\macroy - \meshr}
+  \pgfmathsetmacro\xhigh{\macrox + \meshr}
+  \pgfmathsetmacro\yhigh{\macroy + \meshr}
+
+  \pgfpathrectanglecorners{\pgfpoint{\xlow}{\ylow}}
+                          {\pgfpoint{\xhigh}{\yhigh}}
+
+  \pgfkeysvalueof{%
+    /data point/\pgfoovalueof{name}/execute at end%
+  }
+}
+\tikzdatavisualizationset{
+  visualize as meshgrid/.style={
+    new object={
+      when=after survey,
+      store=/tikz/data visualization/visualizers/#1,
+      class=meshgrid visualizer,
+      arg1=#1
+    },
+    new visualizer={#1}{%
+      color=visualizer color,
+      every path/.style={fill,draw,opacity=0.5},
+    }{},
+    /data point/set=#1
+  },
+  visualize as meshgrid/.default=meshgrid
+}
+
+\begin{document}
+\maketitle
+
+\section{Conformal prediction}
+
+\begin{frame}[fragile]
+  \frametitle{Conformal prediction}
+  \setbeamercovered{invisible}
+  \pause
+  \begin{tikzpicture}[scale=0.75]
+    \datavisualization [
+      scientific axes={clean, upright labels},
+      visualize as scatter/.list={b,r},
+      x axis={label={$\textbf{X}_1$}},
+      y axis={label={$\textbf{X}_2$}},
+      b={style={mark=*, visualizer color=blue}},
+      r={style={mark=*, visualizer color=red}},
+    ]
+      data[ headline={x, y}, set=b
+          , read from file={blue_points.csv}]
+      data[ headline={x, y}, set=r
+          , read from file={red_points.csv}]
+      ;
+  \end{tikzpicture}
+
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[color=blue, circle, draw,fill,
+      label=right:\textcolor{blue}{$label_1$},
+      inner sep=2pt] at (6,3) (l_zero) {};
+    \node[color=red, circle,draw,fill,
+      label=right:\textcolor{red}{$label_2$},
+      below=0.2 of l_zero,
+      inner sep=2pt] (l_one) {};
+  \end{tikzpicture}
+  \pause
+
+  \begin{itemize}[<+->]
+    \item Feature space $\textbf{X} := \mathbb{R}^2$
+    \item Label space $\textbf{Y} := \{
+          \textcolor{blue}{label_1},
+          \textcolor{red}{label_2}\}$
+    \item Example space $\textbf{Z} := \textbf{X} \times
+          \textbf{Y}$
+    \item Example $z_i := (x_i, y_i); x_i \in \textbf{X},
+          y_i \in \textbf{Y}$
+    \item Datensatz $\Lbag z_1,\dots,z_n \Rbag$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Conformal prediction}
+  \setbeamercovered{invisible}
+  \pause
+  \begin{tikzpicture}[scale=0.75]
+
+    \datavisualization [
+        scientific axes={clean, upright labels},
+        visualize as line/.list={d},
+        visualize as scatter/.list={b,r},
+        x axis={label={$\textbf{X}_1$}},
+        y axis={label={$\textbf{X}_2$}},
+        b={style={mark=*, visualizer color=blue}},
+        r={style={mark=*, visualizer color=red}},
+      ]
+        data[set=d] {
+          x, y
+          0.0, 0.0
+          1.0, 1.0
+        }
+        data[ headline={x, y}, set=b
+            , read from file={blue_points.csv}]
+        data[ headline={x, y}, set=r
+            , read from file={red_points.csv}]
+        ;
+  \end{tikzpicture}
+
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[color=blue, circle, draw,fill,
+      label=right:\textcolor{blue}{$label_1$},
+      inner sep=2pt] at (6,3) (l_zero) {};
+    \node[color=red, circle,draw,fill,
+      label=right:\textcolor{red}{$label_2$},
+      below=0.2 of l_zero,
+      inner sep=2pt] (l_one) {};
+
+    \draw ($(l_one) - (-0.12,0.35)$) --
+          ($(l_one) - (0.12,0.35)$);
+
+    \node[below=0.2 of l_one, inner sep=2pt,
+      label=right:\textcolor{black}{%
+        $D_{\Lbag z_1,\dots,z_n \Rbag}$}] {};
+  \end{tikzpicture}
+
+  \begin{itemize}[<+->]
+    \item Klassischer Machine Learning Predictor
+      $D_{\Lbag z_1,\dots,z_n \Rbag}$
+
+    \item Bare predictions, kein confidence Wert in
+          prediction
+
+    \item Kann zu sog. nonconformity measure umgewandelt
+          werden (Basis von CP)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Conformal prediction}
+  \setbeamercovered{invisible}
+  \pause
+
+  \begin{tikzpicture}[scale=0.75]
+    \datavisualization [
+      scientific axes={clean, upright labels},
+      visualize as scatter/.list={b,r},
+      visualize as meshgrid/.list={%
+        meshb0, meshb1, meshb2, meshb3,
+        meshr0, meshr1, meshr2, meshr3
+      },
+      x axis={label={$\textbf{X}_1$}},
+      y axis={label={$\textbf{X}_2$}},
+      b={style={mark=*, visualizer color=blue}},
+      r={style={mark=*, visualizer color=red}},
+      meshb0={style={color=blue!60}},
+      meshb1={style={color=blue!45}},
+      meshb2={style={color=blue!30}},
+      meshb3={style={color=blue!15}},
+      meshr0={style={color=red!60}},
+      meshr1={style={color=red!45}},
+      meshr2={style={color=red!30}},
+      meshr3={style={color=red!15}},
+    ]
+    data[ headline={x, y}, set=b
+        , read from file={blue_points.csv}]
+    data[ headline={x, y}, set=r
+        , read from file={red_points.csv}]
+    data[
+      headline={x, y},
+      read from file={data/0.02_0.csv},
+      set=meshb0
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.03_0.csv},
+      set=meshb1
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.04_0.csv},
+      set=meshb2
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.05_0.csv},
+      set=meshb3
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.02_1.csv},
+      set=meshr0
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.03_1.csv},
+      set=meshr1
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.04_1.csv},
+      set=meshr2
+    ]
+    data[
+      headline={x, y},
+      read from file={data/0.05_1.csv},
+      set=meshr3
+    ]
+    ;
+  \end{tikzpicture}
+
+  \begin{tikzpicture}[remember picture, overlay]
+    \begin{scope}[label distance=0.6cm]
+      \node[color=blue, circle, draw,fill,
+        label=right:\textcolor{blue}{$label_1$},
+        inner sep=1.5pt] at (6,3.75) (l_zero) {};
+      \node[color=red, circle,draw,fill,
+        label=right:\textcolor{red}{$label_2$},
+        below=0.2 of l_zero,
+        inner sep=1.5pt] (l_one) {};
+    \end{scope}
+
+    \node[color=blue!60,opacity=0.5,
+      below=0.2 of l_one, fill, draw] (m_zero) {};
+    \node[color=red!60,opacity=0.5,right=0.2 of m_zero,
+      label=right:\textcolor{black}{$\epsilon_1 := 0.2$},
+      fill, draw] {};
+
+    \node[color=blue!45,opacity=0.5,
+      below=0.2 of m_zero, fill, draw] (m_one) {};
+    \node[color=red!45,opacity=0.5,right=0.2 of m_one,
+      label=right:\textcolor{black}{$\epsilon_2 := 0.3$},
+      fill, draw] {};
+
+    \node[color=blue!30,opacity=0.5,
+      below=0.2 of m_one, fill, draw] (m_two) {};
+    \node[color=red!30,opacity=0.5,right=0.2 of m_two,
+      label=right:\textcolor{black}{$\epsilon_3 := 0.4$},
+      fill, draw] {};
+
+    \node[color=blue!15,opacity=0.5,
+      below=0.2 of m_two, fill, draw] (m_three) {};
+    \node[color=red!15,opacity=0.5,right=0.2 of m_three,
+      label=right:\textcolor{black}{$\epsilon_4 := 0.5$},
+      fill, draw] {};
+  \end{tikzpicture}
+
+  \begin{itemize}[<+->]
+    \item Conformal Predictor
+      $\Gamma^{\epsilon}_{\Lbag z_1,\dots,z_n \Rbag}$
+
+    \item Wichtigste Eigenschaft: validity under
+          exchangeability
+
+    \item $\Gamma^{\epsilon}_{\Lbag z_1,\dots,z_n \Rbag}$
+          hat Genauigkeit von mindestens $1 - \epsilon$
+          (wenn $z_1,\dots,z_n$ exchangeable)
+
+    \item In Realit\"at: wahre exchangeablility selten,
+          aber meistens nah genug dran
+          %(Abhängig von
+          %Datenqualit\"at, Datensatzgr\"o{\ss}e und Feature
+          %space gr\"o{\ss}e)
+  \end{itemize}
+\end{frame}
+
+\section{\libconform}
+
+\begin{frame}[fragile]
+  \frametitle{\libconform}
+  \setbeamercovered{invisible}
+  \pause
+
+  \lstset{%
+    basicstyle=\footnotesize,
+    breaklines = true,
+    keywordstyle=\bfseries\color{green!70!black},
+    basicstyle=\ttfamily\color{black},
+    commentstyle=\itshape\color{purple},
+    identifierstyle=\color{blue},
+    stringstyle=\color{orange},
+    showstringspaces=false,
+    rulecolor=\color{black},
+  }
+  \scalebox{0.5}{%
+    \lstinputlisting[language=Python]{example.py}
+  }
+\end{frame}
+
+\begin{frame}
+  \frametitle{\libconform}
+  \setbeamercovered{invisible}
+  \pause
+  \begin{itemize}[<+->]
+    \item Python: lingua franca f\"ur Machine Learning
+
+    \item MIT-licensed
+
+    \item \textbf{Unstable}
+
+    \item Fokus: extensibility
+
+    \item Grundlegensten Algorithmen der CP-Familie
+          implementiert (CP, smoothed CP, inductive CP,
+          mondrian CP, RRCM, Venn prediction,\dots)
+
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\libconform{} -- TODO}
+  \setbeamercovered{invisible}
+  \pause
+  \begin{itemize}[<+->]
+    \item Test-dichte zu gering
+
+    \item Unausgereifte interne APIs
+
+    \item Single-threaded und langsam
+
+    \item Weitere Algorithmen der CP-Familie implementieren
+          (aggregated CP cross-conformal prediction,
+          Venn-Abers,\dots)
+
+    \item Mehr nonconformity scores
+
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Vielen Dank}
+  Bei Interesse:
+  \begin{itemize}
+    \item \url{https://github.com/jofas/conform/}
+    \item jonas@fassbender.dev
+  \end{itemize}
+\end{frame}
+
+\end{document}

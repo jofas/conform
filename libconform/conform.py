@@ -76,7 +76,7 @@ class _CPBase:
             ps = sorted(ps,key=lambda x: x[1],reverse=True)
 
             j = 1
-            while j < len(self.labels):
+            while j < len(self.labels) - 1:
                 if ps[0][1] != ps[j][1]: break
                 j += 1
 
