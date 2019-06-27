@@ -575,148 +575,304 @@ def abstain():
 # }}}
 
 from sklearn.model_selection import KFold
+
+from sklearn.neighbors import KNeighborsClassifier as KNN,\
+    KNeighborsRegressor as KNNR
+from sklearn.ensemble import RandomForestRegressor as RFR
+from sklearn.gaussian_process import \
+    GaussianProcessRegressor as GPR
+from sklearn.gaussian_process.kernels import RBF, \
+    ConstantKernel as C
+from sklearn.svm import SVR
+
 from infinity import inf
 import matplotlib.pyplot as plt
 from numpy.polynomial.polynomial import polyfit
+from scipy.stats import pearsonr
+
+plt.style.use("ggplot")
 
 class AbstainPredictor:
-    def __init__(self, clf, reward):
-        self.clf        = clf
-        self.reward     = reward
-        self.T          = 1.0
-        self.Reward_pts = []
+    def __init__(
+        self, clf_train, clf_predict, clf_score, reward,
+        ax = None, e=1e-4, scaled = False
+    ):
+        self.clf_train   = clf_train
+        self.clf_predict = clf_predict
+        self.clf_score   = clf_score
 
-    def train(self, X, y):
-        self.clf.train(X, y)
+        self.reward = reward
+        self.T      = 1.0
 
-    def calibrate(self, X, y):
-        A = zip(y, *self.clf.predict_best(X))
-        A = sorted(A, key=lambda x: x[-1])
+        self.ax     = ax
+        self.e      = e
+        self.scaled = scaled
 
-        Reward     = 0.0
-        max_reward = -inf
+        self.regressors = [
+            { "label": "GP [1e-3,1]"
+            , "reg": GPR(C(1.0, (1e-3,1e3)) * RBF(1.0, (1e-3,1.0)))
+            , "T": 1.0 },
+            { "label": "GP [1e-1,1]"
+            , "reg": GPR(C(1.0, (1e-3,1e3)) * RBF(1.0, (1e-1,1.0)))
+            , "T": 1.0 },
+            { "label": "GP [1,2]"
+            , "reg": GPR(C(1.0, (1e-3,1e3)) * RBF(1.0, (1.0,2.0)))
+            , "T": 1.0 },
+            { "label": "SVR RBF C100"
+            , "reg": SVR(gamma="scale", C=100.0)
+            , "T": 1.0 },
+            { "label": "SVR RBF C1"
+            , "reg": SVR(gamma="scale", C=1.0)
+            , "T": 1.0 }
+            #{ "label": "Random Forest"
+            #, "reg": RFR(n_estimators=10)
+            #, "T": 1.0 }
+        ]
 
-        prev_sig_lvl_ = inf
+    def train_cal(self, X, y, ratio=0.1):
+        train = int(len(X) * (1 - ratio))
+        self.clf_train(X[:train], y[:train])
+        self._train(self._A(X[train:], y[train:]))
 
-        for y_, p_, sig_lvl_ in A:
-            if prev_sig_lvl_ == inf:
-                prev_sig_lvl_ = sig_lvl_
+    def train_kfold(self, X, y, kfolds=5):
+        A = []
 
-            elif prev_sig_lvl_ != sig_lvl_:
-                self.Reward_pts.append(
-                    [prev_sig_lvl_, Reward]
-                )
-                prev_sig_lvl_ = sig_lvl_
+        kf = KFold(n_splits = kfolds)
+        for idx_train, idx_test in kf.split(X):
+            X_train, y_train = X[idx_train], y[idx_train]
+            X_test,  y_test  = X[idx_test],  y[idx_test]
 
-            Reward += self.reward(p_, y_)
+            self.clf_train(X_train, y_train)
 
-            if Reward > max_reward:
-                max_reward = Reward
-                self.T     = sig_lvl_
+            A += self._A(X_test, y_test)
 
-        self.Reward_pts.append([prev_sig_lvl_, Reward])
+        self.clf_train(X, y)
+        self._train(A)
 
+    def _train(self, A):
+        self.T, rew_pts = self._reward_calc(A)
+        self._cal_regressors(rew_pts)
+        self._plot(rew_pts, "Training set")
+
+    # score {{{
     def score(self, X, y):
-        A = zip(y, *self.clf.predict_best(X))
+        A = self._A(X, y)
+
+        T, rew_pts = self._reward_calc(A)
+
+        rew = self._reward_for_T(self.T, rew_pts)
+        print("{:20}  {:.3f}".format("raw T", rew))
+
+        for reg in self.regressors:
+            rew = self._reward_for_T(reg["T"], rew_pts)
+
+            print("{:20}  {:.3f}".format(reg["label"],rew))
+        print()
+
+        self._plot(rew_pts, "Test set")
+    # }}}
+
+    # _reward_calc {{{
+    def _reward_calc(self, A):
         A = sorted(A, key=lambda x: x[-1])
 
-        Reward = 0.0
-        Reward_pts = []
+        rew,     T       = 0.0, 1.0
+        min_rew, max_rew = 0.0, 0.0
+        rew_pts          = [[0.0, 0.0]]
+        sig_c            = A[0][-1]
 
-        max_reward, T = -inf, 1.0
+        for i, (y, p, sig) in enumerate(A):
+            if sig_c != sig:
 
-        T_reward = 0.0
+                rew_pts.append([sig_c, rew])
+                if rew > max_rew: max_rew = rew; T = sig_c
+                if rew < min_rew: min_rew = rew
 
-        prev_sig_lvl_ = inf
+                sig_c = sig
 
-        for y_, p_, sig_lvl_ in A:
-            if prev_sig_lvl_ == inf:
-                prev_sig_lvl_ = sig_lvl_
+            rew += self.reward(p, y)
 
-            elif prev_sig_lvl_ != sig_lvl_:
-                Reward_pts.append([prev_sig_lvl_, Reward])
-                prev_sig_lvl_ = sig_lvl_
+        rew_pts.append([sig_c, rew])
+        if rew > max_rew: max_rew = rew; T = sig_c
+        if rew < min_rew: min_rew = rew
 
-            Reward += self.reward(p_, y_)
+        scale_s = lambda x: x / sig_c if self.scaled else x
+        scale_r = lambda x: (x - min_rew) \
+                          / (max_rew - min_rew)
 
-            if sig_lvl_ <= self.T: T_reward = Reward
+        rew_pts = np.array([[scale_s(s), scale_r(r)] \
+            for s, r in rew_pts])
 
-            if Reward > max_reward:
-                max_reward = Reward
-                T          = sig_lvl_
+        return T, rew_pts
+    # }}}
 
-        Reward_pts.append([prev_sig_lvl_, Reward])
+    # _cal_regressors {{{
+    def _cal_regressors(self, rew_pts):
+        X, y = rew_pts[:,0].reshape(-1,1), rew_pts[:,1]
 
-        Reward_pts       = np.array(Reward_pts)
-        Reward_pts_train = np.array(self.Reward_pts)
+        X_pred = [0.0]
+        while X_pred[-1] < X[-1]:
+            X_pred.append(X_pred[-1] + self.e)
+        X_pred = np.array(X_pred).reshape(-1,1)
 
-        coeffs_quad = polyfit( Reward_pts_train[:,0]
-                             , Reward_pts_train[:,1]
-                             , 2 )
+        for reg in self.regressors:
+            reg["reg"].fit(X,y)
 
-        coeffs_cube = polyfit( Reward_pts_train[:,0]
-                             , Reward_pts_train[:,1]
-                             , 3 )
+            P = reg["reg"].predict(X_pred)
 
-        quad_f = lambda x: coeffs_quad[0] \
-                         + coeffs_quad[1] * x \
-                         + coeffs_quad[2] * (x ** 2)
+            max_reward_ = -inf
+            for x, p in zip(X_pred, P):
+                if p > max_reward_:
+                    max_reward_ = p
+                    reg["T"]    = x[0]
 
-        cube_f = lambda x: coeffs_cube[0] \
-                         + coeffs_cube[1] * x \
-                         + coeffs_cube[2] * (x ** 2) \
-                         + coeffs_cube[3] * (x ** 3)
+            pts = np.array([[x, y] for x, y in \
+                zip(X_pred[:,0], P)])
+            self._plot(pts, reg["label"])
+    # }}}
 
-        x_ = [0.0]
-        while x_[-1] < Reward_pts_train[-1,0]:
-            x_.append(x_[-1] + 1e-4)
+    def _reward_for_T(self, T, Reward_pts):
+        res = 0.0
+        for sig_lvl_, reward_ in Reward_pts:
+            if sig_lvl_ <= T: res = reward_
+            else: break
+        return res
 
-        quad_pts = np.array([[x, quad_f(x)] for x in x_])
-        cube_pts = np.array([[x, cube_f(x)] for x in x_])
+    def _plot(self, pts, label):
+        if self.ax is not None:
+            self.ax.plot(pts[:,0], pts[:,1], label=label)
+            self.ax.legend()
 
-        print(max_reward, T_reward, T_reward / max_reward)
-        print(self.T, T)
-
-        fig, ax = plt.subplots(1,1)
-
-        ax.plot( Reward_pts[:,0]
-                    , Reward_pts[:,1]
-                    , c = "r" )
-        ax.plot( Reward_pts_train[:,0]
-                    , Reward_pts_train[:,1]
-                    , c = "b" )
-
-        ax.plot(quad_pts[:,0], quad_pts[:,1], c="c")
-        ax.plot(cube_pts[:,0], cube_pts[:,1], c="g")
-
-        plt.show()
+    def _A(self, X, y):
+        return zip(y,self.clf_predict(X),self.clf_score(X))
 
 def bt():
-    import loss as loss_module
-
     X, y = load_usps_random()
 
-    X_train, y_train = X[:-2400],      y[:-2400]
-    X_cal,   y_cal   = X[-2400:-1200], y[-2400:-1200]
-    X_test,  y_test  = X[-1200:],      y[-1200:]
+    #X_train, y_train = X[:-2400],      y[:-2400]
+    #X_cal,   y_cal   = X[-2400:-1200], y[-2400:-1200]
+    #X_test,  y_test  = X[-1200:],      y[-1200:]
+
+    X_train, y_train = X[:-1200], y[:-1200]
+    X_test,  y_test  = X[-1200:], y[-1200:]
+
+    #X_train, y_train = X[:400],    y[:400]
+    #X_test,  y_test  = X[400:600], y[400:600]
+
+    reward_fn = lambda pred, true: 1.0 if pred == true \
+        else -20.0
+
+    fig, ax = plt.subplots(1,2)
+
+    ax[0].set_title("Conformal Prediction")
+    ax[1].set_title("25 Nearest Neighbors")
 
     ncs = NCSKNearestNeighbors(n_neighbors=1)
-    cp = CP(ncs, [])
+    cp = CP(ncs, [], smoothed=False)
 
-    gain_fn = lambda pred, true: 1.0 if pred == true \
-        else 0.0
+    cp_train   = lambda X, y: cp.train(X, y, override=True)
+    cp_predict = lambda X: cp.predict_best(X, p_vals=False)
+    cp_score   = lambda X: cp.predict_best(X)[1]
 
-    loss_fn = lambda pred,true: \
-        loss_module.squared(pred, true)
+    clf = AbstainPredictor(
+        cp_train, cp_predict, cp_score, reward_fn,
+        ax=ax[0]
+    )
 
-    reward_fn = lambda pred, true: \
-        gain_fn(pred, true) - loss_fn(pred, true)
-
-    clf = AbstainPredictor(cp, reward_fn)
-    clf.train(X_train, y_train)
-    clf.calibrate(X_cal, y_cal)
-
+    clf.train_kfold(X_train, y_train, kfolds=5)
+    #clf.train_cal(X_train, y_train, ratio=0.5)
     clf.score(X_test, y_test)
+
+    knn = KNN(n_neighbors=25)
+
+    knn_train   = lambda X, y: knn.fit(X, y)
+    knn_predict = lambda X: knn.predict(X)
+    knn_score   = lambda X: \
+        [1 - max(row) for row in knn.predict_proba(X)]
+
+    clf = AbstainPredictor(
+        knn_train, knn_predict, knn_score, reward_fn,
+        ax=ax[1], scaled=True
+    )
+
+    clf.train_kfold(X_train, y_train, kfolds=5)
+    #clf.train_cal(X_train, y_train, ratio=0.5)
+    clf.score(X_test, y_test)
+
+    plt.show()
+
+def main():
+    bt()
+
+    #oy_knn()
+    #oy_neural_net()
+    #oy_venn()
+
+    #venn()
+    #knn_regression()
+    #usps_nc1nn()
+    #meta()
+
+    #knn()
+    #neural_net()
+    #descision_tree()
+    #abstain()
+
+if __name__ == '__main__':
+    main()
+
+def regression():
+
+    X = np.array([[5.0],[4.4],[4.9],[4.4],[5.1]
+                 ,[5.9],[5.0],[6.4],[6.7],[6.2]
+                 ,[5.1],[4.6],[5.0],[5.4],[5.0]
+                 ,[6.7],[5.8],[5.5],[5.8],[5.4]
+                 ,[5.1],[5.7],[4.6],[4.6],[6.8]])
+    y = [ 0.3 , 0.2 , 0.2 , 0.2 , 0.4
+        , 1.5 , 0.2 , 1.3 , 1.4 , 1.5
+        , 0.2 , 0.2 , 0.6 , 0.4 , 1.0
+        , 1.7 , 1.2 , 0.2 , 1.0 , 0.4
+        , 0.3 , 1.3 , 0.3 , 0.2 ]
+
+    nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
+    clf = RRCM(nn, [0.02, 0.08])
+    clf.train(X[:-1], y)
+    res = clf.score_online(X[-1], 1.6)
+    print(res)
+
+    """
+    coeffs_quad, meta_quad = \
+        polyfit( Reward_pts_train[:,0]
+               , Reward_pts_train[:,1]
+               , 2
+               , full = True )
+
+    coeffs_cube, meta_cube = \
+        polyfit( Reward_pts_train[:,0]
+               , Reward_pts_train[:,1]
+               , 3
+               , full = True )
+
+    quad_f = lambda x: coeffs_quad[0] \
+                     + coeffs_quad[1] * x \
+                     + coeffs_quad[2] * (x ** 2)
+
+    cube_f = lambda x: coeffs_cube[0] \
+                     + coeffs_cube[1] * x \
+                     + coeffs_cube[2] * (x ** 2) \
+                     + coeffs_cube[3] * (x ** 3)
+
+    x_ = [0.0]
+    while x_[-1] < Reward_pts_train[-1,0]:
+        x_.append(x_[-1] + 1e-4)
+
+    quad_pts = np.array([[x, quad_f(x)] for x in x_])
+    cube_pts = np.array([[x, cube_f(x)] for x in x_])
+
+    ax[0,0].plot(quad_pts[:,0], quad_pts[:,1], c="c")
+    ax[0,0].plot(cube_pts[:,0], cube_pts[:,1], c="g")
+
+    """
 
     """
     kf = KFold(n_splits=5)
@@ -828,43 +984,3 @@ def bt():
         plt.show()
         break
     """
-
-def main():
-    bt()
-
-    #oy_knn()
-    #oy_neural_net()
-    #oy_venn()
-
-    #venn()
-    #knn_regression()
-    #usps_nc1nn()
-    #meta()
-
-    #knn()
-    #neural_net()
-    #descision_tree()
-    #abstain()
-
-if __name__ == '__main__':
-    main()
-
-def regression():
-
-    X = np.array([[5.0],[4.4],[4.9],[4.4],[5.1]
-                 ,[5.9],[5.0],[6.4],[6.7],[6.2]
-                 ,[5.1],[4.6],[5.0],[5.4],[5.0]
-                 ,[6.7],[5.8],[5.5],[5.8],[5.4]
-                 ,[5.1],[5.7],[4.6],[4.6],[6.8]])
-    y = [ 0.3 , 0.2 , 0.2 , 0.2 , 0.4
-        , 1.5 , 0.2 , 1.3 , 1.4 , 1.5
-        , 0.2 , 0.2 , 0.6 , 0.4 , 1.0
-        , 1.7 , 1.2 , 0.2 , 1.0 , 0.4
-        , 0.3 , 1.3 , 0.3 , 0.2 ]
-
-    nn = NCSKNearestNeighborsRegressor(n_neighbors=1)
-    clf = RRCM(nn, [0.02, 0.08])
-    clf.train(X[:-1], y)
-    res = clf.score_online(X[-1], 1.6)
-    print(res)
-

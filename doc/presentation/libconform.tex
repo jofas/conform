@@ -295,25 +295,25 @@
     \node[color=blue!60,opacity=0.5,
       below=0.2 of l_one, fill, draw] (m_zero) {};
     \node[color=red!60,opacity=0.5,right=0.2 of m_zero,
-      label=right:\textcolor{black}{$\epsilon_1 := 0.2$},
+      label=right:\textcolor{black}{$\epsilon_1 := 0.02$},
       fill, draw] {};
 
     \node[color=blue!45,opacity=0.5,
       below=0.2 of m_zero, fill, draw] (m_one) {};
     \node[color=red!45,opacity=0.5,right=0.2 of m_one,
-      label=right:\textcolor{black}{$\epsilon_2 := 0.3$},
+      label=right:\textcolor{black}{$\epsilon_2 := 0.03$},
       fill, draw] {};
 
     \node[color=blue!30,opacity=0.5,
       below=0.2 of m_one, fill, draw] (m_two) {};
     \node[color=red!30,opacity=0.5,right=0.2 of m_two,
-      label=right:\textcolor{black}{$\epsilon_3 := 0.4$},
+      label=right:\textcolor{black}{$\epsilon_3 := 0.04$},
       fill, draw] {};
 
     \node[color=blue!15,opacity=0.5,
       below=0.2 of m_two, fill, draw] (m_three) {};
     \node[color=red!15,opacity=0.5,right=0.2 of m_three,
-      label=right:\textcolor{black}{$\epsilon_4 := 0.5$},
+      label=right:\textcolor{black}{$\epsilon_4 := 0.05$},
       fill, draw] {};
   \end{tikzpicture}
 
@@ -386,12 +386,14 @@
   \begin{itemize}[<+->]
     \item Test-dichte zu gering
 
+    \item Dokumentation
+
     \item Unausgereifte interne APIs
 
     \item Single-threaded und langsam
 
     \item Weitere Algorithmen der CP-Familie implementieren
-          (aggregated CP cross-conformal prediction,
+          (aggregated CP, cross-conformal prediction,
           Venn-Abers,\dots)
 
     \item Mehr nonconformity scores
