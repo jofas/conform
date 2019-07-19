@@ -3,7 +3,7 @@ import numpy as np
 class LabelMap:
     def __init__(self):
         self.map         = {}
-        self.reverse_map = {}
+        self.reverse_map = []
         self.label_count = 0
 
     def transform(self, label):
@@ -13,7 +13,7 @@ class LabelMap:
             return self.map[label]
         else:
             self.map[label] = self.label_count
-            self.reverse_map[self.label_count] = label
+            self.reverse_map.append(label)
             self.label_count += 1
             return self.label_count - 1
 

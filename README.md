@@ -2,9 +2,25 @@
 
 ## TODO
 
-- Venn predict flag for returning different probabilities
-  (min, max, mean, median, width (?), 
-   prediction set, prediction interval)
+- rs rb tree impl
+
+- all label work 2d like neural nets
+
+- LabelMap: np.unique, sorted; fallback if labels are already 0..|Y|,
+
+- predict -> dict to coded 3d matrix
+
+- rework metrics
+
+- rework internal APIs:
+
+  * ncm's
+
+  * vectorizing
+
+- rename stuff 
+
+- tests
 
 ## Possible features/changes
 
@@ -13,6 +29,10 @@
 - IRRCM
 
 - alternative output for RRCM (interval width)
+
+- Venn predict flag for returning different probabilities
+  (min, max, mean, median, width (?), 
+   prediction set, prediction interval)
 
 - NCSBase -> NCSBaseClassifier
 

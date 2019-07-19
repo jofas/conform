@@ -48,20 +48,10 @@ class _CPBase:
     def predict(self, X):
         X = util.format(X)
 
-        res = []
-        for p_vec in self.p_vals(X):
-            predicted = { e: [] for e in self.epsilons }
-
-            for l, p in zip(self.labels, p_vec):
-                for epsilon in self.epsilons:
-                    if p > epsilon:
-                        predicted[epsilon].append(
-                            self.labels.reverse(l)
-                        )
-
-            res.append(predicted)
-
-        return res
+        return np.array([[[1 if p_val > sig_lvl else -1
+            for p_val in p_vec]
+                for sig_lvl in self.epsilons]
+                    for p_vec in self.p_vals(X)])
 
     def predict_best(self, X, p_vals = True):
         X = util.format(X)
