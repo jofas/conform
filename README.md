@@ -30,11 +30,11 @@
 
 - CPBase -> rs + par
 
-- v0.1.1 -> rm nc1nn
-
 ## Dependencies
 
 - numpy
+
+- scipy
 
 - shapely
 
