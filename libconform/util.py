@@ -32,7 +32,7 @@ def append(X, y, X_, y_):
     else:
         return np.vstack((X, X_)), np.append(y, y_)
 
-def format(X, y = None, label_map = None):
+def data_format(X, y = None, label_map = None):
     X = __list_to_ndarray(X)
     X = __reshape_if_vector(X)
 

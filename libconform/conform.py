@@ -5,18 +5,18 @@ from .metrics import CPMetrics, AbstainMetrics
 from .ncs.base import NCSBase
 from . import util
 
-INVALID_A = "Non-conformity classifier invalid"
+INVALID_A = "Non-conformity measure invalid"
 
 class _CPBase:
-    def __init__( self, A, epsilons, smoothed
+    def __init__( self, A, epsilons, labels, smoothed
                 , mondrian_taxonomy ):
 
-        if NCSBase not in type(A).__bases__:
-            raise Exception(INVALID_A)
+        #if NCSBase not in type(A).__bases__:
+        #    raise Exception(INVALID_A)
 
         self.A                 = A
         self.epsilons          = epsilons
-        self.labels            = util.LabelMap()
+        self.labels            = labels
         self.smoothed          = smoothed
         self.mondrian_taxonomy = mondrian_taxonomy
 
@@ -28,7 +28,7 @@ class _CPBase:
         self.ks         = []
 
     def train(self, X, y, override = False):
-        X, y = util.format(X, y, self.labels)
+        X, y = util.data_format(X, y)
 
         if not override and self.init_train:
             self.X_train, self.y_train = util.append(
@@ -46,15 +46,30 @@ class _CPBase:
             for (x_,y_) in zip(X,y)]
 
     def predict(self, X):
-        X = util.format(X)
+        X = util.data_format(X)
 
-        return np.array([[[1 if p_val > sig_lvl else -1
-            for p_val in p_vec]
+        return np.array([[[label for label, p_val
+            in zip(self.labels, p_vec)
+                if p_val > sig_lvl]
+                    for sig_lvl in self.epsilons]
+                        for p_vec in self.p_vals(X)])
+
+    def predict_encoded(self, X):
+        X = util.data_format(X)
+
+        def encode(p_vec, sig_lvl):
+            res = 0
+            for i, p_val in enumerate(p_vec):
+                if p_val > sig_lvl:
+                    res += 0b1 << i
+            return res
+
+        return np.array([[encode(p_vec, sig_lvl)
                 for sig_lvl in self.epsilons]
                     for p_vec in self.p_vals(X)])
 
-    def predict_best(self, X, p_vals = True):
-        X = util.format(X)
+    def predict_best(self, X, sig_lvls = True):
+        X = util.data_format(X)
 
         pred = []; p_vals_ = []
         for p_vec in self.p_vals(X):
@@ -71,47 +86,46 @@ class _CPBase:
                 j += 1
 
             if j == 1:
-                pred.append(self.labels.reverse(ps[0][0]))
+                pred.append(ps[0][0])
             else:
                 pred.append(random.choice([
-                    self.labels.reverse(ps[i][0]) \
-                        for i in range(j)
+                    ps[i][0] for i in range(j)
                 ]))
 
-            if p_vals:
+            if sig_lvls:
                 p_vals_.append(ps[j][1])
 
-        if p_vals:
+        if sig_lvls:
             return np.array(pred), np.array(p_vals_)
         else:
             return np.array(pred)
 
     def score(self, X, y):
-        X, y = util.format(X, y, self.labels)
+        X, y = util.data_format(X, y)
 
         res = CPMetrics(self.epsilons)
         predicted = self.predict(X)
 
         for p_, x_, y_ in zip(predicted, X, y):
             k = self.mondrian_taxonomy(x_, y_)
-            res.update(p_, self.labels.reverse(y_), k)
+            res.update(p_, y_, k)
 
         return res
 
     def score_abstain(self, X, y):
-        X, y = util.format(X, y, self.labels)
+        X, y = util.data_format(X, y)
 
         res = AbstainMetrics(self.epsilons)
         pred, epsilons = self.predict_best(X)
 
         for p_, e_, x_, y_ in zip(pred, epsilons, X, y):
             k = self.mondrian_taxonomy(x_, y_)
-            res.update(p_, e_, self.labels.reverse(y_), k)
+            res.update(p_, e_, y_, k)
 
         return res
 
     def p_vals(self, X):
-        X = util.format(X)
+        X = util.data_format(X)
 
         p_fn = self.__p_vals_smoothed if self.smoothed \
             else self.__p_vals
@@ -145,9 +159,9 @@ class _CPBase:
 def _not_mcp(x, y): return 0
 
 class CP(_CPBase):
-    def __init__( self, A, epsilons, smoothed=False
+    def __init__( self, A, epsilons, labels, smoothed=False
                 , mondrian_taxonomy=_not_mcp ):
-        super().__init__( A, epsilons, smoothed
+        super().__init__( A, epsilons, labels, smoothed
                         , mondrian_taxonomy )
 
     def train(self, X, y, override = False):
@@ -156,30 +170,30 @@ class CP(_CPBase):
                           , cp = True )
 
     def score_online(self, X, y):
-        X, y = util.format(X, y, self.labels)
+        X, y = util.data_format(X, y)
 
         res = CPMetrics(self.epsilons)
 
         for x_, y_ in zip(X, y):
             k = self.mondrian_taxonomy(x_, y_)
             p = self.predict(x_)[0]
-            res.update(p, self.labels.reverse(y_), k)
+            res.update(p, y_, k)
             self.train(x_, y_)
 
         return res
 
 class ICP(_CPBase):
-    def __init__( self, A, epsilons, smoothed=False
+    def __init__( self, A, epsilons, labels, smoothed=False
                 , mondrian_taxonomy=_not_mcp ):
         self.init_cal = False
         self.X_cal    = None
         self.y_cal    = None
 
-        super().__init__( A, epsilons, smoothed
+        super().__init__( A, epsilons, labels, smoothed
                         , mondrian_taxonomy )
 
     def calibrate(self, X, y, override = False):
-        X, y = util.format(X, y, self.labels)
+        X, y = util.data_format(X, y)
 
         if not override and self.init_cal:
             self.X_cal, self.y_cal = util.append(

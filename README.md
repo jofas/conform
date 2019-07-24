@@ -2,21 +2,17 @@
 
 ## TODO
 
-- rs rb tree impl
-
-- all label work 2d like neural nets
-
-- LabelMap: np.unique, sorted; fallback if labels are already 0..|Y|,
-
-- predict -> dict to coded 3d matrix
-
-- rework metrics
-
 - rework internal APIs:
 
   * ncm's
 
   * vectorizing
+
+- ncs -> ncm
+
+- rs rb tree impl
+
+- rework metrics
 
 - rename stuff 
 
