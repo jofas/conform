@@ -1,5 +1,7 @@
 # conform
 
+ArXiv preprint: https://arxiv.org/abs/1907.02015
+
 ## TODO
 
 - rework internal APIs:
